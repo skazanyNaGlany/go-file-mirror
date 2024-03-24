@@ -171,7 +171,19 @@ func (fm *FileMirror) Stat() (os.FileInfo, error) {
 }
 
 func (fm *FileMirror) Sync() error {
-	panic("not implemented")
+	files := fm.GetFiles()
+
+	if len(files) == 0 {
+		return ErrNoFiles
+	}
+
+	for _, f := range files {
+		if err := f.GetUnderlyingFile().Sync(); err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
 func (fm *FileMirror) Truncate(size int64) error {

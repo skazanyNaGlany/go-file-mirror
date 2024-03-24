@@ -38,6 +38,9 @@ func TestRead(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, len(strb), n)
 
+	err = f2.Sync()
+	assert.Nil(t, err)
+
 	// cannot read at EOF
 	n, err = f.Read(readed)
 	assert.NotNil(t, err)

@@ -30,6 +30,9 @@ func TestWriteString(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, len(str), n)
 
+	err = f.Sync()
+	assert.Nil(t, err)
+
 	ret, err := f.Seek(0, io.SeekStart)
 	assert.Nil(t, err)
 	assert.Zero(t, ret)
@@ -49,6 +52,9 @@ func TestWriteString(t *testing.T) {
 	n, err = f2.WriteString(str2)
 	assert.Nil(t, err)
 	assert.Equal(t, len(str), n)
+
+	err = f.Sync()
+	assert.Nil(t, err)
 
 	ret, err = f2.Seek(2, io.SeekStart)
 	assert.Nil(t, err)

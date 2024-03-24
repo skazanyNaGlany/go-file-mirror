@@ -46,7 +46,7 @@ func (f *File) Stat() (os.FileInfo, error) {
 }
 
 func (f *File) Sync() error {
-	panic("not implemented")
+	return f.fileMirror.Sync()
 }
 
 func (f *File) Truncate(size int64) error {
