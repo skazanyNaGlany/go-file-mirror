@@ -22,11 +22,11 @@ func NewFile(fileMirror IFileMirror, underlyingFile *os.File) *File {
 
 // IFile
 func (f *File) Close() error {
-	return f.fileMirror.Close(f)
+	return f.fileMirror.Close()
 }
 
 func (f *File) Read(b []byte) (n int, err error) {
-	panic("not implemented")
+	return f.fileMirror.Read(b)
 }
 
 func (f *File) ReadAt(b []byte, off int64) (n int, err error) {
@@ -38,11 +38,11 @@ func (f *File) ReadFrom(r io.Reader) (n int64, err error) {
 }
 
 func (f *File) Seek(offset int64, whence int) (ret int64, err error) {
-	panic("not implemented")
+	return f.fileMirror.Seek(offset, whence)
 }
 
 func (f *File) Stat() (os.FileInfo, error) {
-	panic("not implemented")
+	return f.fileMirror.Stat()
 }
 
 func (f *File) Sync() error {
@@ -62,14 +62,13 @@ func (f *File) WriteAt(b []byte, off int64) (n int, err error) {
 }
 
 func (f *File) WriteString(s string) (n int, err error) {
-	panic("not implemented")
+	return f.fileMirror.WriteString(s)
 }
 
 func (f *File) WriteTo(w io.Writer) (n int64, err error) {
 	panic("not implemented")
 }
 
-// IFileEx
 func (f *File) SetFileMirror(fileMirror IFileMirror) {
 	f.fileMirror = fileMirror
 }

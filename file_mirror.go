@@ -69,17 +69,19 @@ func (fm *FileMirror) GetWritingFiles() []IFile {
 }
 
 func (fm *FileMirror) GetFiles() []IFile {
-	panic("not implemented")
-}
+	files := make([]IFile, 0)
 
-func (fm *FileMirror) HasFile(file IFile) bool {
-	for _, f := range fm.readingFiles {
-		if f == file {
-			return true
+	for _, f := range append(fm.readingFiles, fm.writingFiles...) {
+		if !slices.Contains(files, f) {
+			files = append(files, f)
 		}
 	}
 
-	for _, f := range fm.writingFiles {
+	return files
+}
+
+func (fm *FileMirror) HasFile(file IFile) bool {
+	for _, f := range fm.GetFiles() {
 		if f == file {
 			return true
 		}
@@ -108,60 +110,99 @@ func (fm *FileMirror) RemoveFile(file IFile) bool {
 	return false
 }
 
-func (fm *FileMirror) Close(file IFile) error {
-	if !fm.HasFile(file) {
-		return ErrDoNotBelong
+func (fm *FileMirror) Close() error {
+	files := fm.GetFiles()
+
+	if len(files) == 0 {
+		return ErrNoFiles
 	}
 
-	err := file.GetUnderlyingFile().Close()
-	file.SetUnderlyingFile(nil)
+	for _, f := range files {
+		if err := f.GetUnderlyingFile().Close(); err != nil {
+			return err
+		}
+	}
 
-	fm.RemoveFile(file)
-
-	return err
+	return nil
 }
 
-func (fm *FileMirror) Read(file IFile, b []byte) (n int, err error) {
+func (fm *FileMirror) Read(b []byte) (n int, err error) {
+	if len(fm.readingFiles) == 0 {
+		return 0, ErrNoFilesToRead
+	}
+
+	return fm.readingFiles[0].GetUnderlyingFile().Read(b)
+}
+
+func (fm *FileMirror) ReadAt(b []byte, off int64) (n int, err error) {
 	panic("not implemented")
 }
 
-func (fm *FileMirror) ReadAt(file IFile, b []byte, off int64) (n int, err error) {
+func (fm *FileMirror) ReadFrom(r io.Reader) (n int64, err error) {
 	panic("not implemented")
 }
 
-func (fm *FileMirror) ReadFrom(file IFile, r io.Reader) (n int64, err error) {
+func (fm *FileMirror) Seek(offset int64, whence int) (ret int64, err error) {
+	files := fm.GetFiles()
+
+	if len(files) == 0 {
+		return 0, ErrNoFiles
+	}
+
+	for _, f := range files {
+		ret, err = f.GetUnderlyingFile().Seek(offset, whence)
+
+		if err != nil {
+			return ret, err
+		}
+	}
+
+	return ret, err
+}
+
+func (fm *FileMirror) Stat() (os.FileInfo, error) {
+	files := fm.GetFiles()
+
+	if len(files) == 0 {
+		return nil, ErrNoFiles
+	}
+
+	return files[0].GetUnderlyingFile().Stat()
+}
+
+func (fm *FileMirror) Sync() error {
 	panic("not implemented")
 }
 
-func (fm *FileMirror) Seek(file IFile, offset int64, whence int) (ret int64, err error) {
+func (fm *FileMirror) Truncate(size int64) error {
 	panic("not implemented")
 }
 
-func (fm *FileMirror) Stat(file IFile) (os.FileInfo, error) {
+func (fm *FileMirror) Write(b []byte) (n int, err error) {
 	panic("not implemented")
 }
 
-func (fm *FileMirror) Sync(file IFile) error {
+func (fm *FileMirror) WriteAt(b []byte, off int64) (n int, err error) {
 	panic("not implemented")
 }
 
-func (fm *FileMirror) Truncate(file IFile, size int64) error {
-	panic("not implemented")
+func (fm *FileMirror) WriteString(s string) (n int, err error) {
+	if len(fm.writingFiles) == 0 {
+		return 0, ErrNoFilesToWrite
+	}
+
+	for _, f := range fm.writingFiles {
+		n, err = f.GetUnderlyingFile().WriteString(s)
+
+		if err != nil {
+			return n, err
+		}
+	}
+
+	return n, nil
 }
 
-func (fm *FileMirror) Write(file IFile, b []byte) (n int, err error) {
-	panic("not implemented")
-}
-
-func (fm *FileMirror) WriteAt(file IFile, b []byte, off int64) (n int, err error) {
-	panic("not implemented")
-}
-
-func (fm *FileMirror) WriteString(file IFile, s string) (n int, err error) {
-	panic("not implemented")
-}
-
-func (fm *FileMirror) WriteTo(file IFile, w io.Writer) (n int64, err error) {
+func (fm *FileMirror) WriteTo(w io.Writer) (n int64, err error) {
 	panic("not implemented")
 }
 
