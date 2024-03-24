@@ -50,7 +50,7 @@ func (f *File) Sync() error {
 }
 
 func (f *File) Truncate(size int64) error {
-	panic("not implemented")
+	return f.fileMirror.Truncate(size)
 }
 
 func (f *File) Write(b []byte) (n int, err error) {

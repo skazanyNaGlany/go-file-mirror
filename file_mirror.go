@@ -187,7 +187,17 @@ func (fm *FileMirror) Sync() error {
 }
 
 func (fm *FileMirror) Truncate(size int64) error {
-	panic("not implemented")
+	if len(fm.writingFiles) == 0 {
+		return ErrNoFilesToWrite
+	}
+
+	for _, f := range fm.writingFiles {
+		if err := f.GetUnderlyingFile().Truncate(size); err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
 func (fm *FileMirror) Write(b []byte) (n int, err error) {
