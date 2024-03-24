@@ -135,7 +135,11 @@ func (fm *FileMirror) Read(b []byte) (n int, err error) {
 }
 
 func (fm *FileMirror) ReadAt(b []byte, off int64) (n int, err error) {
-	panic("not implemented")
+	if len(fm.readingFiles) == 0 {
+		return 0, ErrNoFilesToRead
+	}
+
+	return fm.readingFiles[0].GetUnderlyingFile().ReadAt(b, off)
 }
 
 func (fm *FileMirror) ReadFrom(r io.Reader) (n int64, err error) {

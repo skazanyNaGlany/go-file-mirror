@@ -30,7 +30,7 @@ func (f *File) Read(b []byte) (n int, err error) {
 }
 
 func (f *File) ReadAt(b []byte, off int64) (n int, err error) {
-	panic("not implemented")
+	return f.fileMirror.ReadAt(b, off)
 }
 
 func (f *File) ReadFrom(r io.Reader) (n int64, err error) {
