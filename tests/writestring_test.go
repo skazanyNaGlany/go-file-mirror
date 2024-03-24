@@ -57,6 +57,7 @@ func TestWriteString(t *testing.T) {
 	n, err = f.Read(readed)
 	assert.Nil(t, err)
 	assert.Equal(t, len(str2), n)
+	assert.Equal(t, string(readed), str2)
 
 	f1i, err := f.Stat()
 	assert.Nil(t, err)
