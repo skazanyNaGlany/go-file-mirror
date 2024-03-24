@@ -221,7 +221,19 @@ func (fm *FileMirror) Write(b []byte) (n int, err error) {
 }
 
 func (fm *FileMirror) WriteAt(b []byte, off int64) (n int, err error) {
-	panic("not implemented")
+	if len(fm.writingFiles) == 0 {
+		return 0, ErrNoFilesToWrite
+	}
+
+	for _, f := range fm.writingFiles {
+		n, err = f.GetUnderlyingFile().WriteAt(b, off)
+
+		if err != nil {
+			return n, err
+		}
+	}
+
+	return n, nil
 }
 
 func (fm *FileMirror) WriteString(s string) (n int, err error) {

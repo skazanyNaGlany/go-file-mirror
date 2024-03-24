@@ -58,7 +58,7 @@ func (f *File) Write(b []byte) (n int, err error) {
 }
 
 func (f *File) WriteAt(b []byte, off int64) (n int, err error) {
-	panic("not implemented")
+	return f.fileMirror.WriteAt(b, off)
 }
 
 func (f *File) WriteString(s string) (n int, err error) {
