@@ -113,10 +113,8 @@ func (fm *FileMirror) Close(file IFile) error {
 		return ErrDoNotBelong
 	}
 
-	iFileEx := file.(IFileEx)
-
-	err := iFileEx.GetUnderlyingFile().Close()
-	iFileEx.SetUnderlyingFile(nil)
+	err := file.GetUnderlyingFile().Close()
+	file.SetUnderlyingFile(nil)
 
 	fm.RemoveFile(file)
 

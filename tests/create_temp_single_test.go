@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	gofilemirror "github.com/skazanyNaGlany/go-file-mirror"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestCreateTempSingle(t *testing.T) {
@@ -15,5 +16,7 @@ func TestCreateTempSingle(t *testing.T) {
 		panic(err)
 	}
 
-	f.Close()
+	err = f.Close()
+
+	assert.Nil(t, err)
 }

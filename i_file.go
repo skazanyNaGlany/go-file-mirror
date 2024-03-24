@@ -6,6 +6,10 @@ import (
 )
 
 type IFile interface {
+	SetFileMirror(fileMirror IFileMirror)
+	SetUnderlyingFile(underlyingFile *os.File)
+	GetFileMirror() IFileMirror
+	GetUnderlyingFile() *os.File
 	Close() error
 	Read(b []byte) (n int, err error)
 	ReadAt(b []byte, off int64) (n int, err error)
