@@ -14,9 +14,9 @@ type FileMirror struct {
 }
 
 func (fm *FileMirror) CreateTemp(dir, pattern string) (IFile, error) {
-	f, err := os.CreateTemp(dir, pattern)
+	osf, err := os.CreateTemp(dir, pattern)
 
-	fmf := NewFile(fm, f)
+	fmf := NewFile(fm, osf)
 
 	fm.readingFiles = append(fm.readingFiles, fmf)
 	fm.writingFiles = append(fm.writingFiles, fmf)
@@ -25,11 +25,27 @@ func (fm *FileMirror) CreateTemp(dir, pattern string) (IFile, error) {
 }
 
 func (fm *FileMirror) NewFile(fd uintptr, name string) IFile {
-	panic("not implemented")
+	osf := os.NewFile(fd, name)
+
+	fmf := NewFile(fm, osf)
+
+	fm.readingFiles = append(fm.readingFiles, fmf)
+
+	return fmf
 }
 
 func (fm *FileMirror) Open(name string) (IFile, error) {
-	panic("not implemented")
+	osf, err := os.Open(name)
+
+	if err != nil {
+		return nil, err
+	}
+
+	fmf := NewFile(fm, osf)
+
+	fm.readingFiles = append(fm.readingFiles, fmf)
+
+	return fmf, nil
 }
 
 func (fm *FileMirror) OpenFile(name string, flag int, perm os.FileMode) (IFile, error) {
