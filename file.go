@@ -34,7 +34,7 @@ func (f *File) ReadAt(b []byte, off int64) (n int, err error) {
 }
 
 func (f *File) ReadFrom(r io.Reader) (n int64, err error) {
-	panic("not implemented")
+	return f.fileMirror.ReadFrom(r)
 }
 
 func (f *File) Seek(offset int64, whence int) (ret int64, err error) {
