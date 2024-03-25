@@ -5,7 +5,7 @@ import (
 	"os"
 )
 
-// implements IFile, IFileEx
+// implements IFile
 type File struct {
 	fileMirror     IFileMirror
 	underlyingFile *os.File
