@@ -66,7 +66,7 @@ func (f *File) WriteString(s string) (n int, err error) {
 }
 
 func (f *File) WriteTo(w io.Writer) (n int64, err error) {
-	panic("not implemented")
+	return f.fileMirror.WriteTo(w)
 }
 
 func (f *File) SetFileMirror(fileMirror IFileMirror) {

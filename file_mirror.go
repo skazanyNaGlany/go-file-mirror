@@ -253,7 +253,19 @@ func (fm *FileMirror) WriteString(s string) (n int, err error) {
 }
 
 func (fm *FileMirror) WriteTo(w io.Writer) (n int64, err error) {
-	panic("not implemented")
+	if len(fm.writingFiles) == 0 {
+		return 0, ErrNoFilesToWrite
+	}
+
+	for _, f := range fm.writingFiles {
+		n, err = f.GetUnderlyingFile().WriteTo(w)
+
+		if err != nil {
+			return n, err
+		}
+	}
+
+	return n, nil
 }
 
 func NewFileMirror() IFileMirror {
