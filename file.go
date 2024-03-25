@@ -69,14 +69,6 @@ func (f *File) WriteTo(w io.Writer) (n int64, err error) {
 	return f.fileMirror.WriteTo(w)
 }
 
-func (f *File) SetFileMirror(fileMirror IFileMirror) {
-	f.fileMirror = fileMirror
-}
-
-func (f *File) SetUnderlyingFile(underlyingFile *os.File) {
-	f.underlyingFile = underlyingFile
-}
-
 func (f *File) GetFileMirror() IFileMirror {
 	return f.fileMirror
 }

@@ -6,8 +6,6 @@ import (
 )
 
 type IFile interface {
-	SetFileMirror(fileMirror IFileMirror)
-	SetUnderlyingFile(underlyingFile *os.File)
 	GetFileMirror() IFileMirror
 	GetUnderlyingFile() *os.File
 	Close() error
