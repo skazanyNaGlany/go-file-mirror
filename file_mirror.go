@@ -91,11 +91,14 @@ func (fm *FileMirror) HasFile(file IFile) bool {
 }
 
 func (fm *FileMirror) RemoveFile(file IFile) bool {
+	countRemoved := 0
+
 	for i, f := range fm.readingFiles {
 		if f == file {
 			fm.readingFiles = slices.Delete(fm.readingFiles, i, i+1)
 
-			return true
+			countRemoved++
+			break
 		}
 	}
 
@@ -103,11 +106,12 @@ func (fm *FileMirror) RemoveFile(file IFile) bool {
 		if f == file {
 			fm.writingFiles = slices.Delete(fm.writingFiles, i, i+1)
 
-			return true
+			countRemoved++
+			break
 		}
 	}
 
-	return false
+	return countRemoved > 0
 }
 
 func (fm *FileMirror) Close() error {
