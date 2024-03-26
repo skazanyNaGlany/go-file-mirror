@@ -11,8 +11,8 @@ type IFileMirror interface {
 	NewFile(fd uintptr, name string) IFile
 	Open(name string) (IFile, error)
 	OpenFile(name string, flag int, perm os.FileMode) (IFile, error)
-	SetReadingFiles(files []IFile) error
-	SetWritingFiles(files []IFile) error
+	SetReadingFiles(files []IFile)
+	SetWritingFiles(files []IFile)
 	GetReadingFiles() []IFile
 	GetWritingFiles() []IFile
 	GetFiles() []IFile

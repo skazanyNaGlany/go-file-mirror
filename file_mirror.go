@@ -27,6 +27,10 @@ func (fm *FileMirror) CreateTemp(dir, pattern string) (IFile, error) {
 func (fm *FileMirror) NewFile(fd uintptr, name string) IFile {
 	osf := os.NewFile(fd, name)
 
+	if osf == nil {
+		return nil
+	}
+
 	fmf := NewFile(fm, osf)
 
 	fm.readingFiles = append(fm.readingFiles, fmf)
@@ -52,20 +56,20 @@ func (fm *FileMirror) OpenFile(name string, flag int, perm os.FileMode) (IFile, 
 	panic("not implemented")
 }
 
-func (fm *FileMirror) SetReadingFiles(files []IFile) error {
-	panic("not implemented")
+func (fm *FileMirror) SetReadingFiles(files []IFile) {
+	fm.readingFiles = files
 }
 
-func (fm *FileMirror) SetWritingFiles(files []IFile) error {
-	panic("not implemented")
+func (fm *FileMirror) SetWritingFiles(files []IFile) {
+	fm.writingFiles = files
 }
 
 func (fm *FileMirror) GetReadingFiles() []IFile {
-	panic("not implemented")
+	return fm.readingFiles
 }
 
 func (fm *FileMirror) GetWritingFiles() []IFile {
-	panic("not implemented")
+	return fm.writingFiles
 }
 
 func (fm *FileMirror) GetFiles() []IFile {
