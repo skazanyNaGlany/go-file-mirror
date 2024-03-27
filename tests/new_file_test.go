@@ -16,12 +16,10 @@ func TestNewFile(t *testing.T) {
 	assert.Nil(t, err)
 	assert.NotNil(t, f)
 
-	f2 := fm.NewFile(uintptr(f.Fd()), f.Name())
+	f2 := gofilemirror.NewFile(uintptr(f.Fd()), f.Name())
 	assert.NotNil(t, f2)
 
-	writingFiles := fm.GetWritingFiles()
-	writingFiles = append(writingFiles, f2)
-	fm.SetWritingFiles(writingFiles)
+	assert.True(t, fm.AddWritingFile(f2))
 
 	str := "123abc"
 	readed := make([]byte, len(str))

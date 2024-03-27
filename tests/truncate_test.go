@@ -12,15 +12,20 @@ import (
 func TestTruncate(t *testing.T) {
 	fm := gofilemirror.NewFileMirror()
 
-	f, err := fm.CreateTemp("/tmp", "testing_file_mirror")
+	f, err := gofilemirror.CreateTemp("/tmp", "testing_file_mirror")
 	if err != nil {
 		panic(err)
 	}
 
-	f2, err := fm.CreateTemp("/tmp", "testing_file_mirror")
+	f2, err := gofilemirror.CreateTemp("/tmp", "testing_file_mirror")
 	if err != nil {
 		panic(err)
 	}
+
+	assert.True(t, fm.AddReadingFile(f))
+	assert.True(t, fm.AddReadingFile(f2))
+	assert.True(t, fm.AddWritingFile(f))
+	assert.True(t, fm.AddWritingFile(f2))
 
 	// write string and try to read it at 0 position
 	strb := []byte("123abc")

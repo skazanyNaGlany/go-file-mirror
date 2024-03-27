@@ -9,113 +9,65 @@ import (
 // implements IFileMirror
 // driver for IFile
 type FileMirror struct {
-	readingFiles []IFile
-	writingFiles []IFile
+	readFiles  []IFile
+	writeFiles []IFile
 }
 
-func (fm *FileMirror) CreateTemp(dir, pattern string) (IFile, error) {
-	osf, err := os.CreateTemp(dir, pattern)
-
-	fmf := NewFile(fm, osf)
-
-	fm.readingFiles = append(fm.readingFiles, fmf)
-	fm.writingFiles = append(fm.writingFiles, fmf)
-
-	return fmf, err
-}
-
-func (fm *FileMirror) NewFile(fd uintptr, name string) IFile {
-	osf := os.NewFile(fd, name)
-
-	if osf == nil {
-		return nil
+func (fm *FileMirror) AddReadingFile(file IFile) bool {
+	if slices.Contains(fm.readFiles, file) {
+		return false
 	}
 
-	fmf := NewFile(fm, osf)
+	fm.readFiles = append(fm.readFiles, file)
+	file.SetFileMirror(fm)
 
-	fm.readingFiles = append(fm.readingFiles, fmf)
-
-	return fmf
+	return true
 }
 
-func (fm *FileMirror) Open(name string) (IFile, error) {
-	osf, err := os.Open(name)
+func (fm *FileMirror) RemoveReadingFile(file IFile) bool {
+	i := slices.Index(fm.readFiles, file)
 
-	if err != nil {
-		return nil, err
+	if i == -1 {
+		return false
 	}
 
-	fmf := NewFile(fm, osf)
+	fm.readFiles = slices.Delete(fm.readFiles, i, i+1)
+	file.SetFileMirror(nil)
 
-	fm.readingFiles = append(fm.readingFiles, fmf)
-
-	return fmf, nil
-}
-
-func (fm *FileMirror) OpenFile(name string, flag int, perm os.FileMode) (IFile, error) {
-	panic("not implemented")
-}
-
-func (fm *FileMirror) SetReadingFiles(files []IFile) {
-	fm.readingFiles = files
-}
-
-func (fm *FileMirror) SetWritingFiles(files []IFile) {
-	fm.writingFiles = files
+	return true
 }
 
 func (fm *FileMirror) GetReadingFiles() []IFile {
-	return fm.readingFiles
+	return fm.readFiles
+}
+
+func (fm *FileMirror) AddWritingFile(file IFile) bool {
+	if slices.Contains(fm.writeFiles, file) {
+		return false
+	}
+
+	fm.writeFiles = append(fm.writeFiles, file)
+	file.SetFileMirror(fm)
+
+	return true
+}
+
+func (fm *FileMirror) RemoveWritingFile(file IFile) bool {
+	i := slices.Index(fm.writeFiles, file)
+
+	if i == -1 {
+		return false
+	}
+
+	fm.writeFiles = slices.Delete(fm.writeFiles, i, i+1)
+	file.SetFileMirror(nil)
+
+	return true
+
 }
 
 func (fm *FileMirror) GetWritingFiles() []IFile {
-	return fm.writingFiles
-}
-
-func (fm *FileMirror) GetFiles() []IFile {
-	files := make([]IFile, 0)
-
-	for _, f := range append(fm.readingFiles, fm.writingFiles...) {
-		if !slices.Contains(files, f) {
-			files = append(files, f)
-		}
-	}
-
-	return files
-}
-
-func (fm *FileMirror) HasFile(file IFile) bool {
-	for _, f := range fm.GetFiles() {
-		if f == file {
-			return true
-		}
-	}
-
-	return false
-}
-
-func (fm *FileMirror) RemoveFile(file IFile) bool {
-	countRemoved := 0
-
-	for i, f := range fm.readingFiles {
-		if f == file {
-			fm.readingFiles = slices.Delete(fm.readingFiles, i, i+1)
-
-			countRemoved++
-			break
-		}
-	}
-
-	for i, f := range fm.writingFiles {
-		if f == file {
-			fm.writingFiles = slices.Delete(fm.writingFiles, i, i+1)
-
-			countRemoved++
-			break
-		}
-	}
-
-	return countRemoved > 0
+	return fm.writeFiles
 }
 
 func (fm *FileMirror) Close() error {
@@ -135,23 +87,15 @@ func (fm *FileMirror) Close() error {
 }
 
 func (fm *FileMirror) Read(b []byte) (n int, err error) {
-	if len(fm.readingFiles) == 0 {
+	if len(fm.readFiles) == 0 {
 		return 0, ErrNoFilesToRead
 	}
 
-	return fm.readingFiles[0].GetUnderlyingFile().Read(b)
-}
-
-func (fm *FileMirror) ReadAt(b []byte, off int64) (n int, err error) {
-	if len(fm.readingFiles) == 0 {
-		return 0, ErrNoFilesToRead
-	}
-
-	return fm.readingFiles[0].GetUnderlyingFile().ReadAt(b, off)
+	return fm.readFiles[0].GetUnderlyingFile().Read(b)
 }
 
 func (fm *FileMirror) ReadFrom(r io.Reader) (n int64, err error) {
-	return fm.readingFiles[0].GetUnderlyingFile().ReadFrom(r)
+	return fm.readFiles[0].GetUnderlyingFile().ReadFrom(r)
 }
 
 func (fm *FileMirror) Seek(offset int64, whence int) (ret int64, err error) {
@@ -199,11 +143,11 @@ func (fm *FileMirror) Sync() error {
 }
 
 func (fm *FileMirror) Truncate(size int64) error {
-	if len(fm.writingFiles) == 0 {
+	if len(fm.writeFiles) == 0 {
 		return ErrNoFilesToWrite
 	}
 
-	for _, f := range fm.writingFiles {
+	for _, f := range fm.writeFiles {
 		if err := f.GetUnderlyingFile().Truncate(size); err != nil {
 			return err
 		}
@@ -213,11 +157,11 @@ func (fm *FileMirror) Truncate(size int64) error {
 }
 
 func (fm *FileMirror) Write(b []byte) (n int, err error) {
-	if len(fm.writingFiles) == 0 {
+	if len(fm.writeFiles) == 0 {
 		return 0, ErrNoFilesToWrite
 	}
 
-	for _, f := range fm.writingFiles {
+	for _, f := range fm.writeFiles {
 		n, err = f.GetUnderlyingFile().Write(b)
 
 		if err != nil {
@@ -228,28 +172,12 @@ func (fm *FileMirror) Write(b []byte) (n int, err error) {
 	return n, nil
 }
 
-func (fm *FileMirror) WriteAt(b []byte, off int64) (n int, err error) {
-	if len(fm.writingFiles) == 0 {
-		return 0, ErrNoFilesToWrite
-	}
-
-	for _, f := range fm.writingFiles {
-		n, err = f.GetUnderlyingFile().WriteAt(b, off)
-
-		if err != nil {
-			return n, err
-		}
-	}
-
-	return n, nil
-}
-
 func (fm *FileMirror) WriteString(s string) (n int, err error) {
-	if len(fm.writingFiles) == 0 {
+	if len(fm.writeFiles) == 0 {
 		return 0, ErrNoFilesToWrite
 	}
 
-	for _, f := range fm.writingFiles {
+	for _, f := range fm.writeFiles {
 		n, err = f.GetUnderlyingFile().WriteString(s)
 
 		if err != nil {
@@ -261,11 +189,11 @@ func (fm *FileMirror) WriteString(s string) (n int, err error) {
 }
 
 func (fm *FileMirror) WriteTo(w io.Writer) (n int64, err error) {
-	if len(fm.writingFiles) == 0 {
+	if len(fm.writeFiles) == 0 {
 		return 0, ErrNoFilesToWrite
 	}
 
-	for _, f := range fm.writingFiles {
+	for _, f := range fm.writeFiles {
 		n, err = f.GetUnderlyingFile().WriteTo(w)
 
 		if err != nil {
@@ -274,6 +202,19 @@ func (fm *FileMirror) WriteTo(w io.Writer) (n int64, err error) {
 	}
 
 	return n, nil
+}
+
+// TODO make private
+func (fm *FileMirror) GetFiles() []IFile {
+	files := make([]IFile, 0)
+
+	for _, f := range append(fm.readFiles, fm.writeFiles...) {
+		if !slices.Contains(files, f) {
+			files = append(files, f)
+		}
+	}
+
+	return files
 }
 
 func NewFileMirror() IFileMirror {
