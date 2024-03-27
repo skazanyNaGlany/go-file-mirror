@@ -1,7 +1,6 @@
 package gofilemirror
 
 import (
-	"io"
 	"os"
 	"slices"
 )
@@ -94,8 +93,12 @@ func (fm *FileMirror) Read(b []byte) (n int, err error) {
 	return fm.readFiles[0].GetUnderlyingFile().Read(b)
 }
 
-func (fm *FileMirror) ReadFrom(r io.Reader) (n int64, err error) {
-	return fm.readFiles[0].GetUnderlyingFile().ReadFrom(r)
+func (fm *FileMirror) ReadAt(b []byte, off int64) (n int, err error) {
+	if len(fm.readFiles) == 0 {
+		return 0, ErrNoFilesToRead
+	}
+
+	return fm.readFiles[0].GetUnderlyingFile().ReadAt(b, off)
 }
 
 func (fm *FileMirror) Seek(offset int64, whence int) (ret int64, err error) {
@@ -172,13 +175,13 @@ func (fm *FileMirror) Write(b []byte) (n int, err error) {
 	return n, nil
 }
 
-func (fm *FileMirror) WriteString(s string) (n int, err error) {
+func (fm *FileMirror) WriteAt(b []byte, off int64) (n int, err error) {
 	if len(fm.writeFiles) == 0 {
 		return 0, ErrNoFilesToWrite
 	}
 
 	for _, f := range fm.writeFiles {
-		n, err = f.GetUnderlyingFile().WriteString(s)
+		n, err = f.GetUnderlyingFile().WriteAt(b, off)
 
 		if err != nil {
 			return n, err
@@ -188,13 +191,13 @@ func (fm *FileMirror) WriteString(s string) (n int, err error) {
 	return n, nil
 }
 
-func (fm *FileMirror) WriteTo(w io.Writer) (n int64, err error) {
+func (fm *FileMirror) WriteString(s string) (n int, err error) {
 	if len(fm.writeFiles) == 0 {
 		return 0, ErrNoFilesToWrite
 	}
 
 	for _, f := range fm.writeFiles {
-		n, err = f.GetUnderlyingFile().WriteTo(w)
+		n, err = f.GetUnderlyingFile().WriteString(s)
 
 		if err != nil {
 			return n, err

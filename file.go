@@ -1,7 +1,6 @@
 package gofilemirror
 
 import (
-	"io"
 	"os"
 )
 
@@ -20,8 +19,8 @@ func (f *File) Read(b []byte) (n int, err error) {
 	return f.fileMirror.Read(b)
 }
 
-func (f *File) ReadFrom(r io.Reader) (n int64, err error) {
-	return f.fileMirror.ReadFrom(r)
+func (f *File) ReadAt(b []byte, off int64) (n int, err error) {
+	return f.fileMirror.ReadAt(b, off)
 }
 
 func (f *File) Seek(offset int64, whence int) (ret int64, err error) {
@@ -44,12 +43,12 @@ func (f *File) Write(b []byte) (n int, err error) {
 	return f.fileMirror.Write(b)
 }
 
-func (f *File) WriteString(s string) (n int, err error) {
-	return f.fileMirror.WriteString(s)
+func (f *File) WriteAt(b []byte, off int64) (n int, err error) {
+	return f.fileMirror.WriteAt(b, off)
 }
 
-func (f *File) WriteTo(w io.Writer) (n int64, err error) {
-	return f.fileMirror.WriteTo(w)
+func (f *File) WriteString(s string) (n int, err error) {
+	return f.fileMirror.WriteString(s)
 }
 
 func (f *File) GetFileMirror() IFileMirror {
