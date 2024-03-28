@@ -70,7 +70,7 @@ func (fm *FileMirror) GetWritingFiles() []IFile {
 }
 
 func (fm *FileMirror) Close() error {
-	files := fm.GetFiles()
+	files := fm.getFiles()
 
 	if len(files) == 0 {
 		return ErrNoFiles
@@ -102,7 +102,7 @@ func (fm *FileMirror) ReadAt(b []byte, off int64) (n int, err error) {
 }
 
 func (fm *FileMirror) Seek(offset int64, whence int) (ret int64, err error) {
-	files := fm.GetFiles()
+	files := fm.getFiles()
 
 	if len(files) == 0 {
 		return 0, ErrNoFiles
@@ -120,7 +120,7 @@ func (fm *FileMirror) Seek(offset int64, whence int) (ret int64, err error) {
 }
 
 func (fm *FileMirror) Stat() (os.FileInfo, error) {
-	files := fm.GetFiles()
+	files := fm.getFiles()
 
 	if len(files) == 0 {
 		return nil, ErrNoFiles
@@ -130,7 +130,7 @@ func (fm *FileMirror) Stat() (os.FileInfo, error) {
 }
 
 func (fm *FileMirror) Sync() error {
-	files := fm.GetFiles()
+	files := fm.getFiles()
 
 	if len(files) == 0 {
 		return ErrNoFiles
@@ -207,8 +207,7 @@ func (fm *FileMirror) WriteString(s string) (n int, err error) {
 	return n, nil
 }
 
-// TODO make private
-func (fm *FileMirror) GetFiles() []IFile {
+func (fm *FileMirror) getFiles() []IFile {
 	files := make([]IFile, 0)
 
 	for _, f := range append(fm.readFiles, fm.writeFiles...) {
