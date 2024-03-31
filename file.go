@@ -2,12 +2,14 @@ package gofilemirror
 
 import (
 	"os"
+	"sync"
 )
 
 // implements IFile
 type File struct {
 	fileMirror     IFileMirror
 	underlyingFile *os.File
+	mutex          *sync.Mutex
 }
 
 // IFile
@@ -61,6 +63,14 @@ func (f *File) SetFileMirror(fileMirror IFileMirror) {
 
 func (f *File) GetUnderlyingFile() *os.File {
 	return f.underlyingFile
+}
+
+func (f *File) GetMutex() *sync.Mutex {
+	return f.mutex
+}
+
+func (f *File) SetMutex(mutex *sync.Mutex) {
+	f.mutex = mutex
 }
 
 // Globals

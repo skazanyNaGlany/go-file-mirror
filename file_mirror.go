@@ -77,6 +77,11 @@ func (fm *FileMirror) close() error {
 	}
 
 	for _, f := range files {
+		if mutex := f.GetMutex(); mutex != nil {
+			mutex.Lock()
+			defer mutex.Unlock()
+		}
+
 		if err := f.GetUnderlyingFile().Close(); err != nil {
 			return err
 		}
@@ -90,12 +95,22 @@ func (fm *FileMirror) read(b []byte) (n int, err error) {
 		return 0, ErrNoFilesToRead
 	}
 
+	if mutex := fm.readFiles[0].GetMutex(); mutex != nil {
+		mutex.Lock()
+		defer mutex.Unlock()
+	}
+
 	return fm.readFiles[0].GetUnderlyingFile().Read(b)
 }
 
 func (fm *FileMirror) readAt(b []byte, off int64) (n int, err error) {
 	if len(fm.readFiles) == 0 {
 		return 0, ErrNoFilesToRead
+	}
+
+	if mutex := fm.readFiles[0].GetMutex(); mutex != nil {
+		mutex.Lock()
+		defer mutex.Unlock()
 	}
 
 	return fm.readFiles[0].GetUnderlyingFile().ReadAt(b, off)
@@ -109,6 +124,11 @@ func (fm *FileMirror) seek(offset int64, whence int) (ret int64, err error) {
 	}
 
 	for _, f := range files {
+		if mutex := f.GetMutex(); mutex != nil {
+			mutex.Lock()
+			defer mutex.Unlock()
+		}
+
 		ret, err = f.GetUnderlyingFile().Seek(offset, whence)
 
 		if err != nil {
@@ -126,6 +146,11 @@ func (fm *FileMirror) stat() (os.FileInfo, error) {
 		return nil, ErrNoFiles
 	}
 
+	if mutex := files[0].GetMutex(); mutex != nil {
+		mutex.Lock()
+		defer mutex.Unlock()
+	}
+
 	return files[0].GetUnderlyingFile().Stat()
 }
 
@@ -137,6 +162,11 @@ func (fm *FileMirror) sync() error {
 	}
 
 	for _, f := range files {
+		if mutex := f.GetMutex(); mutex != nil {
+			mutex.Lock()
+			defer mutex.Unlock()
+		}
+
 		if err := f.GetUnderlyingFile().Sync(); err != nil {
 			return err
 		}
@@ -151,6 +181,11 @@ func (fm *FileMirror) truncate(size int64) error {
 	}
 
 	for _, f := range fm.writeFiles {
+		if mutex := f.GetMutex(); mutex != nil {
+			mutex.Lock()
+			defer mutex.Unlock()
+		}
+
 		if err := f.GetUnderlyingFile().Truncate(size); err != nil {
 			return err
 		}
@@ -165,6 +200,11 @@ func (fm *FileMirror) write(b []byte) (n int, err error) {
 	}
 
 	for _, f := range fm.writeFiles {
+		if mutex := f.GetMutex(); mutex != nil {
+			mutex.Lock()
+			defer mutex.Unlock()
+		}
+
 		n, err = f.GetUnderlyingFile().Write(b)
 
 		if err != nil {
@@ -181,6 +221,11 @@ func (fm *FileMirror) writeAt(b []byte, off int64) (n int, err error) {
 	}
 
 	for _, f := range fm.writeFiles {
+		if mutex := f.GetMutex(); mutex != nil {
+			mutex.Lock()
+			defer mutex.Unlock()
+		}
+
 		n, err = f.GetUnderlyingFile().WriteAt(b, off)
 
 		if err != nil {
@@ -197,6 +242,11 @@ func (fm *FileMirror) writeString(s string) (n int, err error) {
 	}
 
 	for _, f := range fm.writeFiles {
+		if mutex := f.GetMutex(); mutex != nil {
+			mutex.Lock()
+			defer mutex.Unlock()
+		}
+
 		n, err = f.GetUnderlyingFile().WriteString(s)
 
 		if err != nil {
