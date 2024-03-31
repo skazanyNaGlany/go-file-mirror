@@ -69,7 +69,7 @@ func (fm *FileMirror) GetWritingFiles() []IFile {
 	return fm.writeFiles
 }
 
-func (fm *FileMirror) Close() error {
+func (fm *FileMirror) close() error {
 	files := fm.getFiles()
 
 	if len(files) == 0 {
@@ -85,7 +85,7 @@ func (fm *FileMirror) Close() error {
 	return nil
 }
 
-func (fm *FileMirror) Read(b []byte) (n int, err error) {
+func (fm *FileMirror) read(b []byte) (n int, err error) {
 	if len(fm.readFiles) == 0 {
 		return 0, ErrNoFilesToRead
 	}
@@ -93,7 +93,7 @@ func (fm *FileMirror) Read(b []byte) (n int, err error) {
 	return fm.readFiles[0].GetUnderlyingFile().Read(b)
 }
 
-func (fm *FileMirror) ReadAt(b []byte, off int64) (n int, err error) {
+func (fm *FileMirror) readAt(b []byte, off int64) (n int, err error) {
 	if len(fm.readFiles) == 0 {
 		return 0, ErrNoFilesToRead
 	}
@@ -101,7 +101,7 @@ func (fm *FileMirror) ReadAt(b []byte, off int64) (n int, err error) {
 	return fm.readFiles[0].GetUnderlyingFile().ReadAt(b, off)
 }
 
-func (fm *FileMirror) Seek(offset int64, whence int) (ret int64, err error) {
+func (fm *FileMirror) seek(offset int64, whence int) (ret int64, err error) {
 	files := fm.getFiles()
 
 	if len(files) == 0 {
@@ -119,7 +119,7 @@ func (fm *FileMirror) Seek(offset int64, whence int) (ret int64, err error) {
 	return ret, err
 }
 
-func (fm *FileMirror) Stat() (os.FileInfo, error) {
+func (fm *FileMirror) stat() (os.FileInfo, error) {
 	files := fm.getFiles()
 
 	if len(files) == 0 {
@@ -129,7 +129,7 @@ func (fm *FileMirror) Stat() (os.FileInfo, error) {
 	return files[0].GetUnderlyingFile().Stat()
 }
 
-func (fm *FileMirror) Sync() error {
+func (fm *FileMirror) sync() error {
 	files := fm.getFiles()
 
 	if len(files) == 0 {
@@ -145,7 +145,7 @@ func (fm *FileMirror) Sync() error {
 	return nil
 }
 
-func (fm *FileMirror) Truncate(size int64) error {
+func (fm *FileMirror) truncate(size int64) error {
 	if len(fm.writeFiles) == 0 {
 		return ErrNoFilesToWrite
 	}
@@ -159,7 +159,7 @@ func (fm *FileMirror) Truncate(size int64) error {
 	return nil
 }
 
-func (fm *FileMirror) Write(b []byte) (n int, err error) {
+func (fm *FileMirror) write(b []byte) (n int, err error) {
 	if len(fm.writeFiles) == 0 {
 		return 0, ErrNoFilesToWrite
 	}
@@ -175,7 +175,7 @@ func (fm *FileMirror) Write(b []byte) (n int, err error) {
 	return n, nil
 }
 
-func (fm *FileMirror) WriteAt(b []byte, off int64) (n int, err error) {
+func (fm *FileMirror) writeAt(b []byte, off int64) (n int, err error) {
 	if len(fm.writeFiles) == 0 {
 		return 0, ErrNoFilesToWrite
 	}
@@ -191,7 +191,7 @@ func (fm *FileMirror) WriteAt(b []byte, off int64) (n int, err error) {
 	return n, nil
 }
 
-func (fm *FileMirror) WriteString(s string) (n int, err error) {
+func (fm *FileMirror) writeString(s string) (n int, err error) {
 	if len(fm.writeFiles) == 0 {
 		return 0, ErrNoFilesToWrite
 	}

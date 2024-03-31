@@ -12,43 +12,43 @@ type File struct {
 
 // IFile
 func (f *File) Close() error {
-	return f.fileMirror.Close()
+	return f.fileMirror.close()
 }
 
 func (f *File) Read(b []byte) (n int, err error) {
-	return f.fileMirror.Read(b)
+	return f.fileMirror.read(b)
 }
 
 func (f *File) ReadAt(b []byte, off int64) (n int, err error) {
-	return f.fileMirror.ReadAt(b, off)
+	return f.fileMirror.readAt(b, off)
 }
 
 func (f *File) Seek(offset int64, whence int) (ret int64, err error) {
-	return f.fileMirror.Seek(offset, whence)
+	return f.fileMirror.seek(offset, whence)
 }
 
 func (f *File) Stat() (os.FileInfo, error) {
-	return f.fileMirror.Stat()
+	return f.fileMirror.stat()
 }
 
 func (f *File) Sync() error {
-	return f.fileMirror.Sync()
+	return f.fileMirror.sync()
 }
 
 func (f *File) Truncate(size int64) error {
-	return f.fileMirror.Truncate(size)
+	return f.fileMirror.truncate(size)
 }
 
 func (f *File) Write(b []byte) (n int, err error) {
-	return f.fileMirror.Write(b)
+	return f.fileMirror.write(b)
 }
 
 func (f *File) WriteAt(b []byte, off int64) (n int, err error) {
-	return f.fileMirror.WriteAt(b, off)
+	return f.fileMirror.writeAt(b, off)
 }
 
 func (f *File) WriteString(s string) (n int, err error) {
-	return f.fileMirror.WriteString(s)
+	return f.fileMirror.writeString(s)
 }
 
 func (f *File) GetFileMirror() IFileMirror {

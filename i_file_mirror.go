@@ -14,14 +14,14 @@ type IFileMirror interface {
 	GetWritingFiles() []IFile
 
 	// similar to IFile
-	Close() error
-	Read(b []byte) (n int, err error)
-	ReadAt(b []byte, off int64) (n int, err error)
-	Seek(offset int64, whence int) (ret int64, err error)
-	Stat() (os.FileInfo, error)
-	Sync() error
-	Truncate(size int64) error
-	Write(b []byte) (n int, err error)
-	WriteAt(b []byte, off int64) (n int, err error)
-	WriteString(s string) (n int, err error)
+	close() error
+	read(b []byte) (n int, err error)
+	readAt(b []byte, off int64) (n int, err error)
+	seek(offset int64, whence int) (ret int64, err error)
+	stat() (os.FileInfo, error)
+	sync() error
+	truncate(size int64) error
+	write(b []byte) (n int, err error)
+	writeAt(b []byte, off int64) (n int, err error)
+	writeString(s string) (n int, err error)
 }
