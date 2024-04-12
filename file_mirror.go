@@ -93,7 +93,9 @@ func (fm *FileMirror) run() {
 	for {
 		operation := <-fm.operations
 
-		fm.execute(&operation)
+		if operation._type != AOT_NONE {
+			fm.execute(&operation)
+		}
 
 		if !fm.running {
 			break
