@@ -10,6 +10,8 @@ import (
 type FileMirror struct {
 	readFiles  []IFile
 	writeFiles []IFile
+	running    bool
+	operations chan AsyncOperation
 }
 
 func (fm *FileMirror) AddReadingFile(file IFile) bool {
@@ -69,8 +71,41 @@ func (fm *FileMirror) GetWritingFiles() []IFile {
 	return fm.writeFiles
 }
 
-func (fm *FileMirror) Close() error {
+func (fm *FileMirror) innerClose() error {
+	fm.running = false
+
+	if fm.operations != nil {
+		close(fm.operations)
+		fm.operations = nil
+	}
+
 	return nil
+}
+
+func (fm *FileMirror) Close() error {
+	fm.innerClose()
+	return nil
+}
+
+func (fm *FileMirror) run() {
+	fm.running = true
+
+	for {
+		operation := <-fm.operations
+
+		fm.execute(&operation)
+
+		if !fm.running {
+			break
+		}
+	}
+
+	fm.innerClose()
+}
+
+func (fm *FileMirror) execute(operation *AsyncOperation) {
+	// TODO
+	panic("not implemented")
 }
 
 func (fm *FileMirror) close() error {
@@ -275,6 +310,9 @@ func (fm *FileMirror) getFiles() []IFile {
 
 func NewFileMirror() IFileMirror {
 	fm := FileMirror{}
+	fm.operations = make(chan AsyncOperation)
+
+	go fm.run()
 
 	return &fm
 }
