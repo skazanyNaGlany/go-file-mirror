@@ -12,6 +12,7 @@ type IFileMirror interface {
 	AddWritingFile(file IFile) bool
 	RemoveWritingFile(file IFile) bool
 	GetWritingFiles() []IFile
+	Close() error
 
 	// similar to IFile
 	close() error

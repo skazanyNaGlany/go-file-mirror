@@ -11,6 +11,7 @@ import (
 
 func TestNewFile(t *testing.T) {
 	fm := gofilemirror.NewFileMirror()
+	defer fm.Close()
 
 	f, err := os.CreateTemp("/tmp", "testing_file_mirror")
 	assert.Nil(t, err)

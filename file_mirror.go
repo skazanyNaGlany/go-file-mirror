@@ -69,6 +69,10 @@ func (fm *FileMirror) GetWritingFiles() []IFile {
 	return fm.writeFiles
 }
 
+func (fm *FileMirror) Close() error {
+	return nil
+}
+
 func (fm *FileMirror) close() error {
 	files := fm.getFiles()
 

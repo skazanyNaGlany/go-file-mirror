@@ -10,6 +10,7 @@ import (
 
 func TestCreateTemp(t *testing.T) {
 	fm := gofilemirror.NewFileMirror()
+	defer fm.Close()
 
 	f, err := gofilemirror.CreateTemp("/tmp", "testing_file_mirror")
 	if err != nil {
