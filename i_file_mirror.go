@@ -13,6 +13,8 @@ type IFileMirror interface {
 	RemoveWritingFile(file IFile) bool
 	GetWritingFiles() []IFile
 	Close() error
+	SetAsyncOperationCallback(callback AsyncOperationCallback)
+	GetAsyncOperationCallback() AsyncOperationCallback
 
 	// similar to IFile
 	close() error

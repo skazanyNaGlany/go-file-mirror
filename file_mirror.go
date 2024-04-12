@@ -8,10 +8,11 @@ import (
 // implements IFileMirror
 // driver for IFile
 type FileMirror struct {
-	readFiles  []IFile
-	writeFiles []IFile
-	running    bool
-	operations chan AsyncOperation
+	readFiles              []IFile
+	writeFiles             []IFile
+	running                bool
+	operations             chan AsyncOperation
+	asyncOperationCallback AsyncOperationCallback
 }
 
 func (fm *FileMirror) AddReadingFile(file IFile) bool {
@@ -85,6 +86,14 @@ func (fm *FileMirror) innerClose() error {
 func (fm *FileMirror) Close() error {
 	fm.innerClose()
 	return nil
+}
+
+func (fm *FileMirror) SetAsyncOperationCallback(callback AsyncOperationCallback) {
+	fm.asyncOperationCallback = callback
+}
+
+func (fm *FileMirror) GetAsyncOperationCallback() AsyncOperationCallback {
+	return fm.asyncOperationCallback
 }
 
 func (fm *FileMirror) run() {
