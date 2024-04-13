@@ -27,4 +27,13 @@ type IFileMirror interface {
 	write(b []byte) (n int, err error)
 	writeAt(b []byte, off int64) (n int, err error)
 	writeString(s string) (n int, err error)
+	readAsync(b []byte) *AsyncOperation
+	readAtAsync(b []byte, off int64) *AsyncOperation
+	seekAsync(offset int64, whence int) *AsyncOperation
+	statAsync() *AsyncOperation
+	syncAsync() *AsyncOperation
+	truncateAsync(size int64) *AsyncOperation
+	writeAsync(b []byte) *AsyncOperation
+	writeAtAsync(b []byte, off int64) *AsyncOperation
+	writeStringAsync(s string) *AsyncOperation
 }

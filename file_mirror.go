@@ -307,6 +307,42 @@ func (fm *FileMirror) writeString(s string) (n int, err error) {
 	return n, nil
 }
 
+func (fm *FileMirror) readAsync(b []byte) *AsyncOperation {
+	panic("not implemented")
+}
+
+func (fm *FileMirror) readAtAsync(b []byte, off int64) *AsyncOperation {
+	panic("not implemented")
+}
+
+func (fm *FileMirror) seekAsync(offset int64, whence int) *AsyncOperation {
+	panic("not implemented")
+}
+
+func (fm *FileMirror) statAsync() *AsyncOperation {
+	panic("not implemented")
+}
+
+func (fm *FileMirror) syncAsync() *AsyncOperation {
+	panic("not implemented")
+}
+
+func (fm *FileMirror) truncateAsync(size int64) *AsyncOperation {
+	panic("not implemented")
+}
+
+func (fm *FileMirror) writeAsync(b []byte) *AsyncOperation {
+	panic("not implemented")
+}
+
+func (fm *FileMirror) writeAtAsync(b []byte, off int64) *AsyncOperation {
+	panic("not implemented")
+}
+
+func (fm *FileMirror) writeStringAsync(s string) *AsyncOperation {
+	panic("not implemented")
+}
+
 func (fm *FileMirror) getFiles() []IFile {
 	files := make([]IFile, 0)
 

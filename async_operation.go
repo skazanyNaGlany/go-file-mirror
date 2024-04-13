@@ -9,6 +9,8 @@ type AsyncOperation struct {
 	whence       int
 	size         int64
 	stringBuffer string
+	started      bool
+	done         bool
 }
 
 func (ao *AsyncOperation) GetType() AsyncOperationType {
@@ -43,34 +45,10 @@ func (ao *AsyncOperation) GetStringBuffer() string {
 	return ao.stringBuffer
 }
 
-func (ao *AsyncOperation) setType(t AsyncOperationType) {
-	ao._type = t
+func (ao *AsyncOperation) IsStarted() bool {
+	return ao.started
 }
 
-func (ao *AsyncOperation) setLastResultError(err error) {
-	ao.err = err
-}
-
-func (ao *AsyncOperation) setLastResultInt(i int64) {
-	ao.resultInt = i
-}
-
-func (ao *AsyncOperation) setBuffer(buff []byte) {
-	ao.buff = buff
-}
-
-func (ao *AsyncOperation) setOffset(off int64) {
-	ao.off = off
-}
-
-func (ao *AsyncOperation) setWhence(whence int) {
-	ao.whence = whence
-}
-
-func (ao *AsyncOperation) setSize(size int64) {
-	ao.size = size
-}
-
-func (ao *AsyncOperation) setStringBuffer(s string) {
-	ao.stringBuffer = s
+func (ao *AsyncOperation) IsDone() bool {
+	return ao.done
 }

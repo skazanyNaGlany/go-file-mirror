@@ -53,6 +53,42 @@ func (f *File) WriteString(s string) (n int, err error) {
 	return f.fileMirror.writeString(s)
 }
 
+func (f *File) ReadAsync(b []byte) *AsyncOperation {
+	return f.fileMirror.readAsync(b)
+}
+
+func (f *File) ReadAtAsync(b []byte, off int64) *AsyncOperation {
+	return f.fileMirror.readAtAsync(b, off)
+}
+
+func (f *File) SeekAsync(offset int64, whence int) *AsyncOperation {
+	return f.fileMirror.seekAsync(offset, whence)
+}
+
+func (f *File) StatAsync() *AsyncOperation {
+	return f.fileMirror.statAsync()
+}
+
+func (f *File) SyncAsync() *AsyncOperation {
+	return f.fileMirror.syncAsync()
+}
+
+func (f *File) TruncateAsync(size int64) *AsyncOperation {
+	return f.fileMirror.truncateAsync(size)
+}
+
+func (f *File) WriteAsync(b []byte) *AsyncOperation {
+	return f.fileMirror.writeAsync(b)
+}
+
+func (f *File) WriteAtAsync(b []byte, off int64) *AsyncOperation {
+	return f.fileMirror.writeAtAsync(b, off)
+}
+
+func (f *File) WriteStringAsync(s string) *AsyncOperation {
+	return f.fileMirror.writeStringAsync(s)
+}
+
 func (f *File) GetFileMirror() IFileMirror {
 	return f.fileMirror
 }
