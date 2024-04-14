@@ -1,6 +1,11 @@
 package gofilemirror
 
+import (
+	"time"
+)
+
 type AsyncOperation struct {
+	file         IFile
 	_type        AsyncOperationType
 	err          error
 	resultInt    int64
@@ -11,6 +16,10 @@ type AsyncOperation struct {
 	stringBuffer string
 	started      bool
 	done         bool
+}
+
+func (ao *AsyncOperation) GetFile() IFile {
+	return ao.file
 }
 
 func (ao *AsyncOperation) GetType() AsyncOperationType {
@@ -51,4 +60,42 @@ func (ao *AsyncOperation) IsStarted() bool {
 
 func (ao *AsyncOperation) IsDone() bool {
 	return ao.done
+}
+
+func (ao *AsyncOperation) WaitForStart(duration time.Duration) {
+	currentDuration := time.Duration(0)
+
+	for {
+		if ao.started {
+			break
+		}
+
+		sleepDuration := 10 * time.Millisecond
+
+		time.Sleep(sleepDuration)
+		currentDuration += sleepDuration
+
+		if currentDuration >= duration {
+			break
+		}
+	}
+}
+
+func (ao *AsyncOperation) WaitForDone(duration time.Duration) {
+	currentDuration := time.Duration(0)
+
+	for {
+		if ao.done {
+			break
+		}
+
+		sleepDuration := 10 * time.Millisecond
+
+		time.Sleep(sleepDuration)
+		currentDuration += sleepDuration
+
+		if currentDuration >= duration {
+			break
+		}
+	}
 }

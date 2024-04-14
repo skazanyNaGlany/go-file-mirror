@@ -12,7 +12,7 @@ type IFile interface {
 	SetMutex(mutex *sync.Mutex)
 	GetUnderlyingFile() *os.File
 	Close() error
-	Read(b []byte) (n int, err error)
+	Read(b []byte) (n int, err error, ops []*AsyncOperation)
 	ReadAt(b []byte, off int64) (n int, err error)
 	Seek(offset int64, whence int) (ret int64, err error)
 	Stat() (os.FileInfo, error)
@@ -21,13 +21,4 @@ type IFile interface {
 	Write(b []byte) (n int, err error)
 	WriteAt(b []byte, off int64) (n int, err error)
 	WriteString(s string) (n int, err error)
-	ReadAsync(b []byte) *AsyncOperation
-	ReadAtAsync(b []byte, off int64) *AsyncOperation
-	SeekAsync(offset int64, whence int) *AsyncOperation
-	StatAsync() *AsyncOperation
-	SyncAsync() *AsyncOperation
-	TruncateAsync(size int64) *AsyncOperation
-	WriteAsync(b []byte) *AsyncOperation
-	WriteAtAsync(b []byte, off int64) *AsyncOperation
-	WriteStringAsync(s string) *AsyncOperation
 }

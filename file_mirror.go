@@ -10,8 +10,9 @@ import (
 type FileMirror struct {
 	readFiles              []IFile
 	writeFiles             []IFile
+	asyncFiles             []IFile
 	running                bool
-	operations             chan AsyncOperation
+	operations             chan *AsyncOperation
 	asyncOperationCallback AsyncOperationCallback
 }
 
@@ -83,6 +84,34 @@ func (fm *FileMirror) innerClose() error {
 	return nil
 }
 
+func (fm *FileMirror) AddAsyncFile(file IFile) bool {
+	if slices.Contains(fm.asyncFiles, file) {
+		return false
+	}
+
+	fm.asyncFiles = append(fm.asyncFiles, file)
+	file.SetFileMirror(fm)
+
+	return true
+}
+
+func (fm *FileMirror) RemoveAsyncFile(file IFile) bool {
+	i := slices.Index(fm.asyncFiles, file)
+
+	if i == -1 {
+		return false
+	}
+
+	fm.asyncFiles = slices.Delete(fm.asyncFiles, i, i+1)
+	file.SetFileMirror(nil)
+
+	return true
+}
+
+func (fm *FileMirror) GetAsyncFiles() []IFile {
+	return fm.readFiles
+}
+
 func (fm *FileMirror) Close() error {
 	fm.innerClose()
 	return nil
@@ -99,11 +128,9 @@ func (fm *FileMirror) GetAsyncOperationCallback() AsyncOperationCallback {
 func (fm *FileMirror) run() {
 	fm.running = true
 
-	for {
-		operation := <-fm.operations
-
-		if operation._type != AOT_NONE {
-			fm.execute(&operation)
+	for asyncOp := range fm.operations {
+		if asyncOp._type != AOT_NONE {
+			fm.execute(asyncOp)
 		}
 
 		if !fm.running {
@@ -116,7 +143,31 @@ func (fm *FileMirror) run() {
 
 func (fm *FileMirror) execute(operation *AsyncOperation) {
 	// TODO
-	panic("not implemented")
+	switch operation._type {
+	case AOT_READ:
+		if mutex := operation.file.GetMutex(); mutex != nil {
+			mutex.Lock()
+			defer mutex.Unlock()
+		}
+
+		operation.started = true
+
+		if fm.asyncOperationCallback != nil {
+			fm.asyncOperationCallback(operation)
+		}
+
+		n, err := operation.file.GetUnderlyingFile().Read(operation.buff)
+
+		operation.resultInt = int64(n)
+		operation.err = err
+		operation.done = true
+
+		if fm.asyncOperationCallback != nil {
+			fm.asyncOperationCallback(operation)
+		}
+	default:
+		panic("not implemented")
+	}
 }
 
 func (fm *FileMirror) close() error {
@@ -140,17 +191,35 @@ func (fm *FileMirror) close() error {
 	return nil
 }
 
-func (fm *FileMirror) read(b []byte) (n int, err error) {
+func (fm *FileMirror) read(b []byte) (n int, err error, ops []*AsyncOperation) {
 	if len(fm.readFiles) == 0 {
-		return 0, ErrNoFilesToRead
+		return 0, ErrNoFilesToRead, nil
 	}
 
-	if mutex := fm.readFiles[0].GetMutex(); mutex != nil {
-		mutex.Lock()
-		defer mutex.Unlock()
-	}
+	file := fm.readFiles[0]
 
-	return fm.readFiles[0].GetUnderlyingFile().Read(b)
+	if slices.Contains(fm.asyncFiles, file) {
+		asyncOp := AsyncOperation{}
+
+		asyncOp._type = AOT_READ
+		asyncOp.file = file
+		asyncOp.buff = make([]byte, len(b))
+
+		ops = append(ops, &asyncOp)
+
+		fm.operations <- &asyncOp
+
+		return 0, nil, ops
+	} else {
+		if mutex := file.GetMutex(); mutex != nil {
+			mutex.Lock()
+			defer mutex.Unlock()
+		}
+
+		n, err = file.GetUnderlyingFile().Read(b)
+
+		return n, err, nil
+	}
 }
 
 func (fm *FileMirror) readAt(b []byte, off int64) (n int, err error) {
@@ -307,42 +376,6 @@ func (fm *FileMirror) writeString(s string) (n int, err error) {
 	return n, nil
 }
 
-func (fm *FileMirror) readAsync(b []byte) *AsyncOperation {
-	panic("not implemented")
-}
-
-func (fm *FileMirror) readAtAsync(b []byte, off int64) *AsyncOperation {
-	panic("not implemented")
-}
-
-func (fm *FileMirror) seekAsync(offset int64, whence int) *AsyncOperation {
-	panic("not implemented")
-}
-
-func (fm *FileMirror) statAsync() *AsyncOperation {
-	panic("not implemented")
-}
-
-func (fm *FileMirror) syncAsync() *AsyncOperation {
-	panic("not implemented")
-}
-
-func (fm *FileMirror) truncateAsync(size int64) *AsyncOperation {
-	panic("not implemented")
-}
-
-func (fm *FileMirror) writeAsync(b []byte) *AsyncOperation {
-	panic("not implemented")
-}
-
-func (fm *FileMirror) writeAtAsync(b []byte, off int64) *AsyncOperation {
-	panic("not implemented")
-}
-
-func (fm *FileMirror) writeStringAsync(s string) *AsyncOperation {
-	panic("not implemented")
-}
-
 func (fm *FileMirror) getFiles() []IFile {
 	files := make([]IFile, 0)
 
@@ -355,9 +388,9 @@ func (fm *FileMirror) getFiles() []IFile {
 	return files
 }
 
-func NewFileMirror() IFileMirror {
+func NewFileMirror(queueSize int) IFileMirror {
 	fm := FileMirror{}
-	fm.operations = make(chan AsyncOperation)
+	fm.operations = make(chan *AsyncOperation, queueSize)
 
 	go fm.run()
 

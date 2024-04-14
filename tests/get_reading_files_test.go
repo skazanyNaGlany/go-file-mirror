@@ -9,7 +9,7 @@ import (
 )
 
 func TestGetReadingFiles(t *testing.T) {
-	fm := gofilemirror.NewFileMirror()
+	fm := gofilemirror.NewFileMirror(FILE_MIRROR_QUEUE_SIZE)
 	defer fm.Close()
 
 	f, err := gofilemirror.CreateTemp("/tmp", "testing_file_mirror")

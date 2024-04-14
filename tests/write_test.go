@@ -10,7 +10,7 @@ import (
 )
 
 func TestWrite(t *testing.T) {
-	fm := gofilemirror.NewFileMirror()
+	fm := gofilemirror.NewFileMirror(FILE_MIRROR_QUEUE_SIZE)
 	defer fm.Close()
 
 	f, err := gofilemirror.CreateTemp("/tmp", "testing_file_mirror")
@@ -43,7 +43,7 @@ func TestWrite(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Zero(t, ret)
 
-	n, err = f.Read(readed)
+	n, err, _ = f.Read(readed)
 	assert.Nil(t, err)
 	assert.Equal(t, len(strb), n)
 
@@ -66,7 +66,7 @@ func TestWrite(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, int64(2), ret)
 
-	n, err = f.Read(readed)
+	n, err, _ = f.Read(readed)
 	assert.Nil(t, err)
 	assert.Equal(t, len(strb2), n)
 	assert.Equal(t, readed, strb2)

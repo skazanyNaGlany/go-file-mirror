@@ -10,7 +10,7 @@ import (
 )
 
 func TestRead(t *testing.T) {
-	fm := gofilemirror.NewFileMirror()
+	fm := gofilemirror.NewFileMirror(FILE_MIRROR_QUEUE_SIZE)
 	defer fm.Close()
 
 	f, err := gofilemirror.CreateTemp("/tmp", "testing_file_mirror")
@@ -32,11 +32,11 @@ func TestRead(t *testing.T) {
 	strb := []byte("123456abc")
 	readed := make([]byte, 6)
 
-	n, err := f.Read(readed)
+	n, err, _ := f.Read(readed)
 	assert.NotNil(t, err)
 	assert.Zero(t, n)
 
-	n, err = f2.Read(readed)
+	n, err, _ = f2.Read(readed)
 	assert.NotNil(t, err)
 	assert.Zero(t, n)
 
@@ -48,7 +48,7 @@ func TestRead(t *testing.T) {
 	assert.Nil(t, err)
 
 	// cannot read at EOF
-	n, err = f.Read(readed)
+	n, err, _ = f.Read(readed)
 	assert.NotNil(t, err)
 	assert.Zero(t, n)
 
@@ -56,7 +56,7 @@ func TestRead(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, int64(4), ret)
 
-	n, err = f.Read(readed)
+	n, err, _ = f.Read(readed)
 	assert.Nil(t, err)
 	assert.Equal(t, n, 5)
 
@@ -64,7 +64,7 @@ func TestRead(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, int64(5), ret)
 
-	n, err = f2.Read(readed)
+	n, err, _ = f2.Read(readed)
 	assert.Nil(t, err)
 	assert.Equal(t, n, 4)
 

@@ -10,7 +10,7 @@ import (
 )
 
 func TestNewFile(t *testing.T) {
-	fm := gofilemirror.NewFileMirror()
+	fm := gofilemirror.NewFileMirror(FILE_MIRROR_QUEUE_SIZE)
 	defer fm.Close()
 
 	f, err := os.CreateTemp("/tmp", "testing_file_mirror")

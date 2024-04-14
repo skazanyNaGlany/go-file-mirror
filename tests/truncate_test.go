@@ -10,7 +10,7 @@ import (
 )
 
 func TestTruncate(t *testing.T) {
-	fm := gofilemirror.NewFileMirror()
+	fm := gofilemirror.NewFileMirror(FILE_MIRROR_QUEUE_SIZE)
 	defer fm.Close()
 
 	f, err := gofilemirror.CreateTemp("/tmp", "testing_file_mirror")
@@ -54,7 +54,7 @@ func TestTruncate(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, int64(0), ret)
 
-	n, err = f2.Read(readed)
+	n, err, _ = f2.Read(readed)
 	assert.Nil(t, err)
 	assert.Equal(t, 2, n)
 

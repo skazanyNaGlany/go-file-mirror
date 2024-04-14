@@ -12,13 +12,16 @@ type IFileMirror interface {
 	AddWritingFile(file IFile) bool
 	RemoveWritingFile(file IFile) bool
 	GetWritingFiles() []IFile
+	AddAsyncFile(file IFile) bool
+	RemoveAsyncFile(file IFile) bool
+	GetAsyncFiles() []IFile
 	Close() error
 	SetAsyncOperationCallback(callback AsyncOperationCallback)
 	GetAsyncOperationCallback() AsyncOperationCallback
 
 	// similar to IFile
 	close() error
-	read(b []byte) (n int, err error)
+	read(b []byte) (n int, err error, ops []*AsyncOperation)
 	readAt(b []byte, off int64) (n int, err error)
 	seek(offset int64, whence int) (ret int64, err error)
 	stat() (os.FileInfo, error)
@@ -27,13 +30,4 @@ type IFileMirror interface {
 	write(b []byte) (n int, err error)
 	writeAt(b []byte, off int64) (n int, err error)
 	writeString(s string) (n int, err error)
-	readAsync(b []byte) *AsyncOperation
-	readAtAsync(b []byte, off int64) *AsyncOperation
-	seekAsync(offset int64, whence int) *AsyncOperation
-	statAsync() *AsyncOperation
-	syncAsync() *AsyncOperation
-	truncateAsync(size int64) *AsyncOperation
-	writeAsync(b []byte) *AsyncOperation
-	writeAtAsync(b []byte, off int64) *AsyncOperation
-	writeStringAsync(s string) *AsyncOperation
 }
