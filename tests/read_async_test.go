@@ -66,7 +66,7 @@ func TestReadAsync(t *testing.T) {
 	// write some test data
 	strb := []byte("123abc")
 
-	n, err = f.Write(strb)
+	n, err = f2.Write(strb)
 	assert.Nil(t, err)
 	assert.Equal(t, len(strb), n)
 
