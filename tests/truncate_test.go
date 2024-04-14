@@ -54,7 +54,7 @@ func TestTruncate(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, int64(0), ret)
 
-	n, err, _ = f2.Read(readed)
+	_, n, err = f2.Read(readed)
 	assert.Nil(t, err)
 	assert.Equal(t, 2, n)
 

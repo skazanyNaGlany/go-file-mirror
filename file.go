@@ -17,7 +17,7 @@ func (f *File) Close() error {
 	return f.fileMirror.close()
 }
 
-func (f *File) Read(b []byte) (n int, err error, ops []*AsyncOperation) {
+func (f *File) Read(b []byte) (ops []*AsyncOperation, n int, err error) {
 	return f.fileMirror.read(b)
 }
 

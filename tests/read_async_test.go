@@ -39,7 +39,7 @@ func TestReadAsync(t *testing.T) {
 	// read at 0 position
 	readed := make([]byte, 6)
 
-	n, err, ops := f.Read(readed)
+	ops, n, err := f.Read(readed)
 	assert.Nil(t, err)
 	assert.Zero(t, n)
 	assert.Len(t, ops, 1)
@@ -76,7 +76,7 @@ func TestReadAsync(t *testing.T) {
 	assert.Nil(t, err)
 
 	// read again, this time with data in the file
-	n, err, ops = f.Read(readed)
+	ops, n, err = f.Read(readed)
 	assert.Nil(t, err)
 	assert.Zero(t, n)
 	assert.Len(t, ops, 1)

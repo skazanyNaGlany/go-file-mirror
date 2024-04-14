@@ -191,9 +191,9 @@ func (fm *FileMirror) close() error {
 	return nil
 }
 
-func (fm *FileMirror) read(b []byte) (n int, err error, ops []*AsyncOperation) {
+func (fm *FileMirror) read(b []byte) (ops []*AsyncOperation, n int, err error) {
 	if len(fm.readFiles) == 0 {
-		return 0, ErrNoFilesToRead, nil
+		return nil, 0, ErrNoFilesToRead
 	}
 
 	file := fm.readFiles[0]
@@ -209,7 +209,7 @@ func (fm *FileMirror) read(b []byte) (n int, err error, ops []*AsyncOperation) {
 
 		fm.operations <- &asyncOp
 
-		return 0, nil, ops
+		return ops, 0, nil
 	} else {
 		if mutex := file.GetMutex(); mutex != nil {
 			mutex.Lock()
@@ -218,7 +218,7 @@ func (fm *FileMirror) read(b []byte) (n int, err error, ops []*AsyncOperation) {
 
 		n, err = file.GetUnderlyingFile().Read(b)
 
-		return n, err, nil
+		return nil, n, err
 	}
 }
 
