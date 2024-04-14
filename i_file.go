@@ -13,7 +13,7 @@ type IFile interface {
 	GetUnderlyingFile() *os.File
 	Close() error
 	Read(b []byte) (ops []*AsyncOperation, n int, err error)
-	ReadAt(b []byte, off int64) (n int, err error)
+	ReadAt(b []byte, off int64) (ops []*AsyncOperation, n int, err error)
 	Seek(offset int64, whence int) (ret int64, err error)
 	Stat() (os.FileInfo, error)
 	Sync() error

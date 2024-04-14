@@ -43,6 +43,7 @@ func TestReadAsync(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Zero(t, n)
 	assert.Len(t, ops, 1)
+	assert.Equal(t, ops[0].GetBuffer(), make([]byte, 6))
 
 	ops[0].WaitForStart(10 * time.Second)
 	assert.True(t, ops[0].IsStarted())
@@ -88,10 +89,26 @@ func TestReadAsync(t *testing.T) {
 	assert.Equal(t, 4, callbackCalledCount)
 	assert.True(t, ops[0].IsDone())
 
-	// no data to read from empty file
 	assert.Nil(t, err)
 	assert.Equal(t, len(strb), int(ops[0].GetLastResultInt()))
 	assert.Equal(t, ops[0].GetBuffer(), strb)
+
+	// read using ReadAt
+	ops, n, err = f.ReadAt(readed, 2)
+	assert.Nil(t, err)
+	assert.Zero(t, n)
+	assert.Len(t, ops, 1)
+
+	ops[0].WaitForStart(10 * time.Second)
+	assert.True(t, ops[0].IsStarted())
+
+	ops[0].WaitForDone(10 * time.Second)
+	assert.Equal(t, 6, callbackCalledCount)
+	assert.True(t, ops[0].IsDone())
+
+	assert.Nil(t, err)
+	assert.Equal(t, len(strb[2:]), int(ops[0].GetLastResultInt()))
+	assert.Equal(t, ops[0].GetBuffer()[:4], strb[2:])
 
 	err = f.Close()
 	assert.Nil(t, err)

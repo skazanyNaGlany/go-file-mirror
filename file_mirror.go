@@ -165,6 +165,27 @@ func (fm *FileMirror) execute(operation *AsyncOperation) {
 		if fm.asyncOperationCallback != nil {
 			fm.asyncOperationCallback(operation)
 		}
+	case AOT_READ_AT:
+		if mutex := operation.file.GetMutex(); mutex != nil {
+			mutex.Lock()
+			defer mutex.Unlock()
+		}
+
+		operation.started = true
+
+		if fm.asyncOperationCallback != nil {
+			fm.asyncOperationCallback(operation)
+		}
+
+		n, err := operation.file.GetUnderlyingFile().ReadAt(operation.buff, operation.off)
+
+		operation.resultInt = int64(n)
+		operation.err = err
+		operation.done = true
+
+		if fm.asyncOperationCallback != nil {
+			fm.asyncOperationCallback(operation)
+		}
 	default:
 		panic("not implemented")
 	}
@@ -222,17 +243,39 @@ func (fm *FileMirror) read(b []byte) (ops []*AsyncOperation, n int, err error) {
 	}
 }
 
-func (fm *FileMirror) readAt(b []byte, off int64) (n int, err error) {
+func (fm *FileMirror) readAt(
+	b []byte,
+	off int64,
+) (ops []*AsyncOperation, n int, err error) {
 	if len(fm.readFiles) == 0 {
-		return 0, ErrNoFilesToRead
+		return nil, 0, ErrNoFilesToRead
 	}
 
-	if mutex := fm.readFiles[0].GetMutex(); mutex != nil {
-		mutex.Lock()
-		defer mutex.Unlock()
-	}
+	file := fm.readFiles[0]
 
-	return fm.readFiles[0].GetUnderlyingFile().ReadAt(b, off)
+	if slices.Contains(fm.asyncFiles, file) {
+		asyncOp := AsyncOperation{}
+
+		asyncOp._type = AOT_READ_AT
+		asyncOp.file = file
+		asyncOp.buff = make([]byte, len(b))
+		asyncOp.off = off
+
+		ops = append(ops, &asyncOp)
+
+		fm.operations <- &asyncOp
+
+		return ops, 0, nil
+	} else {
+		if mutex := file.GetMutex(); mutex != nil {
+			mutex.Lock()
+			defer mutex.Unlock()
+		}
+
+		n, err = file.GetUnderlyingFile().ReadAt(b, off)
+
+		return nil, n, err
+	}
 }
 
 func (fm *FileMirror) seek(offset int64, whence int) (ret int64, err error) {

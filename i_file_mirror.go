@@ -22,7 +22,7 @@ type IFileMirror interface {
 	// similar to IFile
 	close() error
 	read(b []byte) (ops []*AsyncOperation, n int, err error)
-	readAt(b []byte, off int64) (n int, err error)
+	readAt(b []byte, off int64) (ops []*AsyncOperation, n int, err error)
 	seek(offset int64, whence int) (ret int64, err error)
 	stat() (os.FileInfo, error)
 	sync() error

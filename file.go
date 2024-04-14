@@ -21,7 +21,7 @@ func (f *File) Read(b []byte) (ops []*AsyncOperation, n int, err error) {
 	return f.fileMirror.read(b)
 }
 
-func (f *File) ReadAt(b []byte, off int64) (n int, err error) {
+func (f *File) ReadAt(b []byte, off int64) (ops []*AsyncOperation, n int, err error) {
 	return f.fileMirror.readAt(b, off)
 }
 
