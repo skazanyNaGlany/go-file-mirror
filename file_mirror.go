@@ -186,6 +186,27 @@ func (fm *FileMirror) execute(operation *AsyncOperation) {
 		if fm.asyncOperationCallback != nil {
 			fm.asyncOperationCallback(operation)
 		}
+	case AOT_WRITE:
+		if mutex := operation.file.GetMutex(); mutex != nil {
+			mutex.Lock()
+			defer mutex.Unlock()
+		}
+
+		operation.started = true
+
+		if fm.asyncOperationCallback != nil {
+			fm.asyncOperationCallback(operation)
+		}
+
+		n, err := operation.file.GetUnderlyingFile().Write(operation.buff)
+
+		operation.resultInt = int64(n)
+		operation.err = err
+		operation.done = true
+
+		if fm.asyncOperationCallback != nil {
+			fm.asyncOperationCallback(operation)
+		}
 	default:
 		panic("not implemented")
 	}
@@ -356,46 +377,79 @@ func (fm *FileMirror) truncate(size int64) error {
 	return nil
 }
 
-func (fm *FileMirror) write(b []byte) (n int, err error) {
+func (fm *FileMirror) write(b []byte) (ops []*AsyncOperation, n int, err error) {
 	if len(fm.writeFiles) == 0 {
-		return 0, ErrNoFilesToWrite
+		return nil, 0, ErrNoFilesToWrite
 	}
 
-	for _, f := range fm.writeFiles {
-		if mutex := f.GetMutex(); mutex != nil {
-			mutex.Lock()
-			defer mutex.Unlock()
-		}
+	for _, file := range fm.writeFiles {
+		if slices.Contains(fm.asyncFiles, file) {
+			asyncOp := AsyncOperation{}
 
-		n, err = f.GetUnderlyingFile().Write(b)
+			asyncOp._type = AOT_WRITE
+			asyncOp.file = file
+			asyncOp.buff = make([]byte, len(b))
 
-		if err != nil {
-			return n, err
+			copy(asyncOp.buff, b)
+
+			ops = append(ops, &asyncOp)
+
+			fm.operations <- &asyncOp
+		} else {
+			if mutex := file.GetMutex(); mutex != nil {
+				mutex.Lock()
+				defer mutex.Unlock()
+			}
+
+			n, err = file.GetUnderlyingFile().Write(b)
+
+			if err != nil {
+				return ops, n, err
+			}
 		}
 	}
 
-	return n, nil
+	return ops, n, nil
 }
 
-func (fm *FileMirror) writeAt(b []byte, off int64) (n int, err error) {
+func (fm *FileMirror) writeAt(
+	b []byte,
+	off int64,
+) (ops []*AsyncOperation, n int, err error) {
 	if len(fm.writeFiles) == 0 {
-		return 0, ErrNoFilesToWrite
+		return nil, 0, ErrNoFilesToWrite
 	}
 
-	for _, f := range fm.writeFiles {
-		if mutex := f.GetMutex(); mutex != nil {
-			mutex.Lock()
-			defer mutex.Unlock()
+	for _, file := range fm.writeFiles {
+		if slices.Contains(fm.asyncFiles, file) {
+			asyncOp := AsyncOperation{}
+
+			asyncOp._type = AOT_WRITE_AT
+			asyncOp.file = file
+			asyncOp.buff = make([]byte, len(b))
+			asyncOp.off = off
+
+			copy(asyncOp.buff, b)
+
+			ops = append(ops, &asyncOp)
+
+			fm.operations <- &asyncOp
+		} else {
+			if mutex := file.GetMutex(); mutex != nil {
+				mutex.Lock()
+				defer mutex.Unlock()
+			}
+
+			n, err = file.GetUnderlyingFile().WriteAt(b, off)
+
+			if err != nil {
+				return ops, n, err
+			}
 		}
 
-		n, err = f.GetUnderlyingFile().WriteAt(b, off)
-
-		if err != nil {
-			return n, err
-		}
 	}
 
-	return n, nil
+	return ops, n, nil
 }
 
 func (fm *FileMirror) writeString(s string) (n int, err error) {

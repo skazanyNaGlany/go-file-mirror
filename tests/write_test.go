@@ -32,7 +32,7 @@ func TestWrite(t *testing.T) {
 	strb := []byte("123abc")
 	readed := make([]byte, len(strb))
 
-	n, err := f.Write(strb)
+	_, n, err := f.Write(strb)
 	assert.Nil(t, err)
 	assert.Equal(t, len(strb), n)
 
@@ -55,7 +55,7 @@ func TestWrite(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, int64(2), ret)
 
-	n, err = f2.Write(strb2)
+	_, n, err = f2.Write(strb2)
 	assert.Nil(t, err)
 	assert.Equal(t, len(strb), n)
 

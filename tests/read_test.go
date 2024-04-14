@@ -40,7 +40,7 @@ func TestRead(t *testing.T) {
 	assert.NotNil(t, err)
 	assert.Zero(t, n)
 
-	n, err = f2.Write(strb)
+	_, n, err = f2.Write(strb)
 	assert.Nil(t, err)
 	assert.Equal(t, len(strb), n)
 

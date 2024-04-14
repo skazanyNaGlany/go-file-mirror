@@ -27,7 +27,7 @@ type IFileMirror interface {
 	stat() (os.FileInfo, error)
 	sync() error
 	truncate(size int64) error
-	write(b []byte) (n int, err error)
-	writeAt(b []byte, off int64) (n int, err error)
+	write(b []byte) (ops []*AsyncOperation, n int, err error)
+	writeAt(b []byte, off int64) (ops []*AsyncOperation, n int, err error)
 	writeString(s string) (n int, err error)
 }

@@ -32,7 +32,7 @@ func TestTruncate(t *testing.T) {
 	strb := []byte("123abc")
 	readed := make([]byte, len(strb))
 
-	n, err := f.Write(strb)
+	_, n, err := f.Write(strb)
 	assert.Nil(t, err)
 	assert.Equal(t, len(strb), n)
 

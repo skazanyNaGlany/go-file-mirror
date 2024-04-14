@@ -18,7 +18,7 @@ type IFile interface {
 	Stat() (os.FileInfo, error)
 	Sync() error
 	Truncate(size int64) error
-	Write(b []byte) (n int, err error)
-	WriteAt(b []byte, off int64) (n int, err error)
+	Write(b []byte) (ops []*AsyncOperation, n int, err error)
+	WriteAt(b []byte, off int64) (ops []*AsyncOperation, n int, err error)
 	WriteString(s string) (n int, err error)
 }

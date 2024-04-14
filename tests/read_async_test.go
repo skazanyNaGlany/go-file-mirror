@@ -66,9 +66,17 @@ func TestReadAsync(t *testing.T) {
 	// write some test data
 	strb := []byte("123abc")
 
-	n, err = f2.Write(strb)
+	ops2, n, err := f2.Write(strb)
 	assert.Nil(t, err)
 	assert.Equal(t, len(strb), n)
+	assert.Len(t, ops2, 1)
+
+	ops2[0].WaitForStart(10 * time.Second)
+	assert.True(t, ops2[0].IsStarted())
+
+	ops2[0].WaitForDone(10 * time.Second)
+	assert.Equal(t, 4, callbackCalledCount)
+	assert.True(t, ops2[0].IsDone())
 
 	// set file position to 0
 	n2, err = f.Seek(0, io.SeekStart)
@@ -86,7 +94,7 @@ func TestReadAsync(t *testing.T) {
 	assert.True(t, ops[0].IsStarted())
 
 	ops[0].WaitForDone(10 * time.Second)
-	assert.Equal(t, 4, callbackCalledCount)
+	assert.Equal(t, 6, callbackCalledCount)
 	assert.True(t, ops[0].IsDone())
 
 	assert.Nil(t, err)
@@ -103,7 +111,7 @@ func TestReadAsync(t *testing.T) {
 	assert.True(t, ops[0].IsStarted())
 
 	ops[0].WaitForDone(10 * time.Second)
-	assert.Equal(t, 6, callbackCalledCount)
+	assert.Equal(t, 8, callbackCalledCount)
 	assert.True(t, ops[0].IsDone())
 
 	assert.Nil(t, err)

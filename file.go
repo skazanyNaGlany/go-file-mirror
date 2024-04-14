@@ -41,11 +41,11 @@ func (f *File) Truncate(size int64) error {
 	return f.fileMirror.truncate(size)
 }
 
-func (f *File) Write(b []byte) (n int, err error) {
+func (f *File) Write(b []byte) (ops []*AsyncOperation, n int, err error) {
 	return f.fileMirror.write(b)
 }
 
-func (f *File) WriteAt(b []byte, off int64) (n int, err error) {
+func (f *File) WriteAt(b []byte, off int64) (ops []*AsyncOperation, n int, err error) {
 	return f.fileMirror.writeAt(b, off)
 }
 
