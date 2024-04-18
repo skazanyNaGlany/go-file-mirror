@@ -207,6 +207,92 @@ func (fm *FileMirror) execute(operation *AsyncOperation) {
 		if fm.asyncOperationCallback != nil {
 			fm.asyncOperationCallback(operation)
 		}
+	case AOT_WRITE_AT:
+		if mutex := operation.file.GetMutex(); mutex != nil {
+			mutex.Lock()
+			defer mutex.Unlock()
+		}
+
+		operation.started = true
+
+		if fm.asyncOperationCallback != nil {
+			fm.asyncOperationCallback(operation)
+		}
+
+		n, err := operation.file.GetUnderlyingFile().
+			WriteAt(operation.buff, operation.off)
+
+		operation.resultInt = int64(n)
+		operation.err = err
+		operation.done = true
+
+		if fm.asyncOperationCallback != nil {
+			fm.asyncOperationCallback(operation)
+		}
+	case AOT_WRITE_STRING:
+		if mutex := operation.file.GetMutex(); mutex != nil {
+			mutex.Lock()
+			defer mutex.Unlock()
+		}
+
+		operation.started = true
+
+		if fm.asyncOperationCallback != nil {
+			fm.asyncOperationCallback(operation)
+		}
+
+		n, err := operation.file.GetUnderlyingFile().
+			WriteString(operation.stringBuffer)
+
+		operation.resultInt = int64(n)
+		operation.err = err
+		operation.done = true
+
+		if fm.asyncOperationCallback != nil {
+			fm.asyncOperationCallback(operation)
+		}
+	case AOT_TRUNCATE:
+		if mutex := operation.file.GetMutex(); mutex != nil {
+			mutex.Lock()
+			defer mutex.Unlock()
+		}
+
+		operation.started = true
+
+		if fm.asyncOperationCallback != nil {
+			fm.asyncOperationCallback(operation)
+		}
+
+		err := operation.file.GetUnderlyingFile().Truncate(operation.size)
+
+		operation.err = err
+		operation.done = true
+
+		if fm.asyncOperationCallback != nil {
+			fm.asyncOperationCallback(operation)
+		}
+	case AOT_SEEK:
+		if mutex := operation.file.GetMutex(); mutex != nil {
+			mutex.Lock()
+			defer mutex.Unlock()
+		}
+
+		operation.started = true
+
+		if fm.asyncOperationCallback != nil {
+			fm.asyncOperationCallback(operation)
+		}
+
+		ret, err := operation.file.GetUnderlyingFile().
+			Seek(operation.off, operation.whence)
+
+		operation.err = err
+		operation.resultInt = ret
+		operation.done = true
+
+		if fm.asyncOperationCallback != nil {
+			fm.asyncOperationCallback(operation)
+		}
 	default:
 		panic("not implemented")
 	}
@@ -299,82 +385,119 @@ func (fm *FileMirror) readAt(
 	}
 }
 
-func (fm *FileMirror) seek(offset int64, whence int) (ret int64, err error) {
+func (fm *FileMirror) seek(
+	offset int64,
+	whence int,
+) (ops []*AsyncOperation, ret int64, err error) {
 	files := fm.getFiles()
 
 	if len(files) == 0 {
-		return 0, ErrNoFiles
+		return nil, 0, ErrNoFiles
 	}
 
-	for _, f := range files {
-		if mutex := f.GetMutex(); mutex != nil {
-			mutex.Lock()
-			defer mutex.Unlock()
-		}
+	for _, file := range files {
+		if slices.Contains(fm.asyncFiles, file) {
+			asyncOp := AsyncOperation{}
 
-		ret, err = f.GetUnderlyingFile().Seek(offset, whence)
+			asyncOp._type = AOT_SEEK
+			asyncOp.file = file
+			asyncOp.off = offset
+			asyncOp.whence = whence
 
-		if err != nil {
-			return ret, err
+			ops = append(ops, &asyncOp)
+
+			fm.operations <- &asyncOp
+		} else {
+			if mutex := file.GetMutex(); mutex != nil {
+				mutex.Lock()
+				defer mutex.Unlock()
+			}
+
+			ret, err = file.GetUnderlyingFile().Seek(offset, whence)
+
+			if err != nil {
+				return ops, ret, err
+			}
 		}
 	}
 
-	return ret, err
+	return ops, ret, err
 }
 
 func (fm *FileMirror) stat() (os.FileInfo, error) {
+	if len(fm.readFiles) == 0 {
+		return nil, ErrNoFilesToRead
+	}
+
+	if mutex := fm.readFiles[0].GetMutex(); mutex != nil {
+		mutex.Lock()
+		defer mutex.Unlock()
+	}
+
+	return fm.readFiles[0].GetUnderlyingFile().Stat()
+}
+
+func (fm *FileMirror) sync() (ops []*AsyncOperation, err error) {
 	files := fm.getFiles()
 
 	if len(files) == 0 {
 		return nil, ErrNoFiles
 	}
 
-	if mutex := files[0].GetMutex(); mutex != nil {
-		mutex.Lock()
-		defer mutex.Unlock()
-	}
+	for _, file := range files {
+		if slices.Contains(fm.asyncFiles, file) {
+			asyncOp := AsyncOperation{}
 
-	return files[0].GetUnderlyingFile().Stat()
-}
+			asyncOp._type = AOT_SYNC
+			asyncOp.file = file
 
-func (fm *FileMirror) sync() error {
-	files := fm.getFiles()
+			ops = append(ops, &asyncOp)
 
-	if len(files) == 0 {
-		return ErrNoFiles
-	}
+			fm.operations <- &asyncOp
+		} else {
+			if mutex := file.GetMutex(); mutex != nil {
+				mutex.Lock()
+				defer mutex.Unlock()
+			}
 
-	for _, f := range files {
-		if mutex := f.GetMutex(); mutex != nil {
-			mutex.Lock()
-			defer mutex.Unlock()
-		}
-
-		if err := f.GetUnderlyingFile().Sync(); err != nil {
-			return err
+			if err := file.GetUnderlyingFile().Sync(); err != nil {
+				return ops, err
+			}
 		}
 	}
 
-	return nil
+	return ops, nil
 }
 
-func (fm *FileMirror) truncate(size int64) error {
+func (fm *FileMirror) truncate(size int64) (ops []*AsyncOperation, err error) {
 	if len(fm.writeFiles) == 0 {
-		return ErrNoFilesToWrite
+		return nil, ErrNoFilesToWrite
 	}
 
-	for _, f := range fm.writeFiles {
-		if mutex := f.GetMutex(); mutex != nil {
-			mutex.Lock()
-			defer mutex.Unlock()
-		}
+	for _, file := range fm.writeFiles {
+		if slices.Contains(fm.asyncFiles, file) {
+			asyncOp := AsyncOperation{}
 
-		if err := f.GetUnderlyingFile().Truncate(size); err != nil {
-			return err
+			asyncOp._type = AOT_TRUNCATE
+			asyncOp.file = file
+			asyncOp.size = size
+
+			ops = append(ops, &asyncOp)
+
+			fm.operations <- &asyncOp
+		} else {
+			if mutex := file.GetMutex(); mutex != nil {
+				mutex.Lock()
+				defer mutex.Unlock()
+			}
+
+			if err := file.GetUnderlyingFile().Truncate(size); err != nil {
+				return ops, err
+			}
 		}
 	}
 
-	return nil
+	return ops, err
 }
 
 func (fm *FileMirror) write(b []byte) (ops []*AsyncOperation, n int, err error) {
@@ -452,25 +575,37 @@ func (fm *FileMirror) writeAt(
 	return ops, n, nil
 }
 
-func (fm *FileMirror) writeString(s string) (n int, err error) {
+func (fm *FileMirror) writeString(s string) (ops []*AsyncOperation, n int, err error) {
 	if len(fm.writeFiles) == 0 {
-		return 0, ErrNoFilesToWrite
+		return nil, 0, ErrNoFilesToWrite
 	}
 
-	for _, f := range fm.writeFiles {
-		if mutex := f.GetMutex(); mutex != nil {
-			mutex.Lock()
-			defer mutex.Unlock()
-		}
+	for _, file := range fm.writeFiles {
+		if slices.Contains(fm.asyncFiles, file) {
+			asyncOp := AsyncOperation{}
 
-		n, err = f.GetUnderlyingFile().WriteString(s)
+			asyncOp._type = AOT_WRITE_STRING
+			asyncOp.file = file
+			asyncOp.stringBuffer = s
 
-		if err != nil {
-			return n, err
+			ops = append(ops, &asyncOp)
+
+			fm.operations <- &asyncOp
+		} else {
+			if mutex := file.GetMutex(); mutex != nil {
+				mutex.Lock()
+				defer mutex.Unlock()
+			}
+
+			n, err = file.GetUnderlyingFile().WriteString(s)
+
+			if err != nil {
+				return ops, n, err
+			}
 		}
 	}
 
-	return n, nil
+	return ops, n, nil
 }
 
 func (fm *FileMirror) getFiles() []IFile {

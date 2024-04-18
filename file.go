@@ -25,7 +25,10 @@ func (f *File) ReadAt(b []byte, off int64) (ops []*AsyncOperation, n int, err er
 	return f.fileMirror.readAt(b, off)
 }
 
-func (f *File) Seek(offset int64, whence int) (ret int64, err error) {
+func (f *File) Seek(
+	offset int64,
+	whence int,
+) (ops []*AsyncOperation, ret int64, err error) {
 	return f.fileMirror.seek(offset, whence)
 }
 
@@ -33,11 +36,11 @@ func (f *File) Stat() (os.FileInfo, error) {
 	return f.fileMirror.stat()
 }
 
-func (f *File) Sync() error {
+func (f *File) Sync() (ops []*AsyncOperation, err error) {
 	return f.fileMirror.sync()
 }
 
-func (f *File) Truncate(size int64) error {
+func (f *File) Truncate(size int64) (ops []*AsyncOperation, err error) {
 	return f.fileMirror.truncate(size)
 }
 
@@ -49,7 +52,7 @@ func (f *File) WriteAt(b []byte, off int64) (ops []*AsyncOperation, n int, err e
 	return f.fileMirror.writeAt(b, off)
 }
 
-func (f *File) WriteString(s string) (n int, err error) {
+func (f *File) WriteString(s string) (ops []*AsyncOperation, n int, err error) {
 	return f.fileMirror.writeString(s)
 }
 
