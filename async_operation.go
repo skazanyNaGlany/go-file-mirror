@@ -9,8 +9,8 @@ type AsyncOperation struct {
 	_type        AsyncOperationType
 	err          error
 	resultInt    int64
-	buff         []byte
-	off          int64
+	buffer       []byte
+	offset       int64
 	whence       int
 	size         int64
 	stringBuffer string
@@ -35,11 +35,11 @@ func (ao *AsyncOperation) GetLastResultInt() int64 {
 }
 
 func (ao *AsyncOperation) GetBuffer() []byte {
-	return ao.buff
+	return ao.buffer
 }
 
 func (ao *AsyncOperation) GetOffset() int64 {
-	return ao.off
+	return ao.offset
 }
 
 func (ao *AsyncOperation) GetWhence() int {

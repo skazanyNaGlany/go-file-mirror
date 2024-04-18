@@ -17,18 +17,21 @@ func (f *File) Close() error {
 	return f.fileMirror.close()
 }
 
-func (f *File) Read(b []byte) (ops []*AsyncOperation, n int, err error) {
+func (f *File) Read(b []byte) (operations []*AsyncOperation, n int, err error) {
 	return f.fileMirror.read(b)
 }
 
-func (f *File) ReadAt(b []byte, off int64) (ops []*AsyncOperation, n int, err error) {
+func (f *File) ReadAt(
+	b []byte,
+	off int64,
+) (operations []*AsyncOperation, n int, err error) {
 	return f.fileMirror.readAt(b, off)
 }
 
 func (f *File) Seek(
 	offset int64,
 	whence int,
-) (ops []*AsyncOperation, ret int64, err error) {
+) (operations []*AsyncOperation, ret int64, err error) {
 	return f.fileMirror.seek(offset, whence)
 }
 
@@ -36,23 +39,26 @@ func (f *File) Stat() (os.FileInfo, error) {
 	return f.fileMirror.stat()
 }
 
-func (f *File) Sync() (ops []*AsyncOperation, err error) {
+func (f *File) Sync() (operations []*AsyncOperation, err error) {
 	return f.fileMirror.sync()
 }
 
-func (f *File) Truncate(size int64) (ops []*AsyncOperation, err error) {
+func (f *File) Truncate(size int64) (operations []*AsyncOperation, err error) {
 	return f.fileMirror.truncate(size)
 }
 
-func (f *File) Write(b []byte) (ops []*AsyncOperation, n int, err error) {
+func (f *File) Write(b []byte) (operations []*AsyncOperation, n int, err error) {
 	return f.fileMirror.write(b)
 }
 
-func (f *File) WriteAt(b []byte, off int64) (ops []*AsyncOperation, n int, err error) {
+func (f *File) WriteAt(
+	b []byte,
+	off int64,
+) (operations []*AsyncOperation, n int, err error) {
 	return f.fileMirror.writeAt(b, off)
 }
 
-func (f *File) WriteString(s string) (ops []*AsyncOperation, n int, err error) {
+func (f *File) WriteString(s string) (operations []*AsyncOperation, n int, err error) {
 	return f.fileMirror.writeString(s)
 }
 

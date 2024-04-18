@@ -156,7 +156,7 @@ func (fm *FileMirror) execute(operation *AsyncOperation) {
 			fm.asyncOperationCallback(operation)
 		}
 
-		n, err := operation.file.GetUnderlyingFile().Read(operation.buff)
+		n, err := operation.file.GetUnderlyingFile().Read(operation.buffer)
 
 		operation.resultInt = int64(n)
 		operation.err = err
@@ -177,7 +177,8 @@ func (fm *FileMirror) execute(operation *AsyncOperation) {
 			fm.asyncOperationCallback(operation)
 		}
 
-		n, err := operation.file.GetUnderlyingFile().ReadAt(operation.buff, operation.off)
+		n, err := operation.file.GetUnderlyingFile().
+			ReadAt(operation.buffer, operation.offset)
 
 		operation.resultInt = int64(n)
 		operation.err = err
@@ -198,7 +199,7 @@ func (fm *FileMirror) execute(operation *AsyncOperation) {
 			fm.asyncOperationCallback(operation)
 		}
 
-		n, err := operation.file.GetUnderlyingFile().Write(operation.buff)
+		n, err := operation.file.GetUnderlyingFile().Write(operation.buffer)
 
 		operation.resultInt = int64(n)
 		operation.err = err
@@ -220,7 +221,7 @@ func (fm *FileMirror) execute(operation *AsyncOperation) {
 		}
 
 		n, err := operation.file.GetUnderlyingFile().
-			WriteAt(operation.buff, operation.off)
+			WriteAt(operation.buffer, operation.offset)
 
 		operation.resultInt = int64(n)
 		operation.err = err
@@ -284,7 +285,7 @@ func (fm *FileMirror) execute(operation *AsyncOperation) {
 		}
 
 		ret, err := operation.file.GetUnderlyingFile().
-			Seek(operation.off, operation.whence)
+			Seek(operation.offset, operation.whence)
 
 		operation.err = err
 		operation.resultInt = ret
@@ -319,7 +320,7 @@ func (fm *FileMirror) close() error {
 	return nil
 }
 
-func (fm *FileMirror) read(b []byte) (ops []*AsyncOperation, n int, err error) {
+func (fm *FileMirror) read(b []byte) (operations []*AsyncOperation, n int, err error) {
 	if len(fm.readFiles) == 0 {
 		return nil, 0, ErrNoFilesToRead
 	}
@@ -331,13 +332,13 @@ func (fm *FileMirror) read(b []byte) (ops []*AsyncOperation, n int, err error) {
 
 		asyncOp._type = AOT_READ
 		asyncOp.file = file
-		asyncOp.buff = make([]byte, len(b))
+		asyncOp.buffer = make([]byte, len(b))
 
-		ops = append(ops, &asyncOp)
+		operations = append(operations, &asyncOp)
 
 		fm.operations <- &asyncOp
 
-		return ops, 0, nil
+		return operations, 0, nil
 	} else {
 		if mutex := file.GetMutex(); mutex != nil {
 			mutex.Lock()
@@ -353,7 +354,7 @@ func (fm *FileMirror) read(b []byte) (ops []*AsyncOperation, n int, err error) {
 func (fm *FileMirror) readAt(
 	b []byte,
 	off int64,
-) (ops []*AsyncOperation, n int, err error) {
+) (operations []*AsyncOperation, n int, err error) {
 	if len(fm.readFiles) == 0 {
 		return nil, 0, ErrNoFilesToRead
 	}
@@ -365,14 +366,14 @@ func (fm *FileMirror) readAt(
 
 		asyncOp._type = AOT_READ_AT
 		asyncOp.file = file
-		asyncOp.buff = make([]byte, len(b))
-		asyncOp.off = off
+		asyncOp.buffer = make([]byte, len(b))
+		asyncOp.offset = off
 
-		ops = append(ops, &asyncOp)
+		operations = append(operations, &asyncOp)
 
 		fm.operations <- &asyncOp
 
-		return ops, 0, nil
+		return operations, 0, nil
 	} else {
 		if mutex := file.GetMutex(); mutex != nil {
 			mutex.Lock()
@@ -388,7 +389,7 @@ func (fm *FileMirror) readAt(
 func (fm *FileMirror) seek(
 	offset int64,
 	whence int,
-) (ops []*AsyncOperation, ret int64, err error) {
+) (operations []*AsyncOperation, ret int64, err error) {
 	files := fm.getFiles()
 
 	if len(files) == 0 {
@@ -401,10 +402,10 @@ func (fm *FileMirror) seek(
 
 			asyncOp._type = AOT_SEEK
 			asyncOp.file = file
-			asyncOp.off = offset
+			asyncOp.offset = offset
 			asyncOp.whence = whence
 
-			ops = append(ops, &asyncOp)
+			operations = append(operations, &asyncOp)
 
 			fm.operations <- &asyncOp
 		} else {
@@ -416,12 +417,12 @@ func (fm *FileMirror) seek(
 			ret, err = file.GetUnderlyingFile().Seek(offset, whence)
 
 			if err != nil {
-				return ops, ret, err
+				return operations, ret, err
 			}
 		}
 	}
 
-	return ops, ret, err
+	return operations, ret, err
 }
 
 func (fm *FileMirror) stat() (os.FileInfo, error) {
@@ -437,7 +438,7 @@ func (fm *FileMirror) stat() (os.FileInfo, error) {
 	return fm.readFiles[0].GetUnderlyingFile().Stat()
 }
 
-func (fm *FileMirror) sync() (ops []*AsyncOperation, err error) {
+func (fm *FileMirror) sync() (operations []*AsyncOperation, err error) {
 	files := fm.getFiles()
 
 	if len(files) == 0 {
@@ -451,7 +452,7 @@ func (fm *FileMirror) sync() (ops []*AsyncOperation, err error) {
 			asyncOp._type = AOT_SYNC
 			asyncOp.file = file
 
-			ops = append(ops, &asyncOp)
+			operations = append(operations, &asyncOp)
 
 			fm.operations <- &asyncOp
 		} else {
@@ -461,15 +462,15 @@ func (fm *FileMirror) sync() (ops []*AsyncOperation, err error) {
 			}
 
 			if err := file.GetUnderlyingFile().Sync(); err != nil {
-				return ops, err
+				return operations, err
 			}
 		}
 	}
 
-	return ops, nil
+	return operations, nil
 }
 
-func (fm *FileMirror) truncate(size int64) (ops []*AsyncOperation, err error) {
+func (fm *FileMirror) truncate(size int64) (operations []*AsyncOperation, err error) {
 	if len(fm.writeFiles) == 0 {
 		return nil, ErrNoFilesToWrite
 	}
@@ -482,7 +483,7 @@ func (fm *FileMirror) truncate(size int64) (ops []*AsyncOperation, err error) {
 			asyncOp.file = file
 			asyncOp.size = size
 
-			ops = append(ops, &asyncOp)
+			operations = append(operations, &asyncOp)
 
 			fm.operations <- &asyncOp
 		} else {
@@ -492,15 +493,15 @@ func (fm *FileMirror) truncate(size int64) (ops []*AsyncOperation, err error) {
 			}
 
 			if err := file.GetUnderlyingFile().Truncate(size); err != nil {
-				return ops, err
+				return operations, err
 			}
 		}
 	}
 
-	return ops, err
+	return operations, err
 }
 
-func (fm *FileMirror) write(b []byte) (ops []*AsyncOperation, n int, err error) {
+func (fm *FileMirror) write(b []byte) (operations []*AsyncOperation, n int, err error) {
 	if len(fm.writeFiles) == 0 {
 		return nil, 0, ErrNoFilesToWrite
 	}
@@ -511,11 +512,11 @@ func (fm *FileMirror) write(b []byte) (ops []*AsyncOperation, n int, err error) 
 
 			asyncOp._type = AOT_WRITE
 			asyncOp.file = file
-			asyncOp.buff = make([]byte, len(b))
+			asyncOp.buffer = make([]byte, len(b))
 
-			copy(asyncOp.buff, b)
+			copy(asyncOp.buffer, b)
 
-			ops = append(ops, &asyncOp)
+			operations = append(operations, &asyncOp)
 
 			fm.operations <- &asyncOp
 		} else {
@@ -527,18 +528,18 @@ func (fm *FileMirror) write(b []byte) (ops []*AsyncOperation, n int, err error) 
 			n, err = file.GetUnderlyingFile().Write(b)
 
 			if err != nil {
-				return ops, n, err
+				return operations, n, err
 			}
 		}
 	}
 
-	return ops, n, nil
+	return operations, n, nil
 }
 
 func (fm *FileMirror) writeAt(
 	b []byte,
 	off int64,
-) (ops []*AsyncOperation, n int, err error) {
+) (operations []*AsyncOperation, n int, err error) {
 	if len(fm.writeFiles) == 0 {
 		return nil, 0, ErrNoFilesToWrite
 	}
@@ -549,12 +550,12 @@ func (fm *FileMirror) writeAt(
 
 			asyncOp._type = AOT_WRITE_AT
 			asyncOp.file = file
-			asyncOp.buff = make([]byte, len(b))
-			asyncOp.off = off
+			asyncOp.buffer = make([]byte, len(b))
+			asyncOp.offset = off
 
-			copy(asyncOp.buff, b)
+			copy(asyncOp.buffer, b)
 
-			ops = append(ops, &asyncOp)
+			operations = append(operations, &asyncOp)
 
 			fm.operations <- &asyncOp
 		} else {
@@ -566,16 +567,18 @@ func (fm *FileMirror) writeAt(
 			n, err = file.GetUnderlyingFile().WriteAt(b, off)
 
 			if err != nil {
-				return ops, n, err
+				return operations, n, err
 			}
 		}
 
 	}
 
-	return ops, n, nil
+	return operations, n, nil
 }
 
-func (fm *FileMirror) writeString(s string) (ops []*AsyncOperation, n int, err error) {
+func (fm *FileMirror) writeString(
+	s string,
+) (operations []*AsyncOperation, n int, err error) {
 	if len(fm.writeFiles) == 0 {
 		return nil, 0, ErrNoFilesToWrite
 	}
@@ -588,7 +591,7 @@ func (fm *FileMirror) writeString(s string) (ops []*AsyncOperation, n int, err e
 			asyncOp.file = file
 			asyncOp.stringBuffer = s
 
-			ops = append(ops, &asyncOp)
+			operations = append(operations, &asyncOp)
 
 			fm.operations <- &asyncOp
 		} else {
@@ -600,12 +603,12 @@ func (fm *FileMirror) writeString(s string) (ops []*AsyncOperation, n int, err e
 			n, err = file.GetUnderlyingFile().WriteString(s)
 
 			if err != nil {
-				return ops, n, err
+				return operations, n, err
 			}
 		}
 	}
 
-	return ops, n, nil
+	return operations, n, nil
 }
 
 func (fm *FileMirror) getFiles() []IFile {
