@@ -90,7 +90,7 @@ func Create(name string) (IFile, error) {
 		return nil, err
 	}
 
-	return &File{underlyingFile: f}, nil
+	return &File{underlyingFile: f, mutex: &sync.Mutex{}}, nil
 }
 
 func CreateTemp(dir, pattern string) (IFile, error) {
@@ -100,7 +100,7 @@ func CreateTemp(dir, pattern string) (IFile, error) {
 		return nil, err
 	}
 
-	return &File{underlyingFile: f}, nil
+	return &File{underlyingFile: f, mutex: &sync.Mutex{}}, nil
 }
 
 func NewFile(fd uintptr, name string) IFile {
@@ -110,7 +110,7 @@ func NewFile(fd uintptr, name string) IFile {
 		return nil
 	}
 
-	return &File{underlyingFile: f}
+	return &File{underlyingFile: f, mutex: &sync.Mutex{}}
 }
 
 func Open(name string) (IFile, error) {
@@ -120,7 +120,7 @@ func Open(name string) (IFile, error) {
 		return nil, err
 	}
 
-	return &File{underlyingFile: f}, nil
+	return &File{underlyingFile: f, mutex: &sync.Mutex{}}, nil
 }
 
 func OpenFile(name string, flag int, perm os.FileMode) (IFile, error) {
@@ -130,5 +130,5 @@ func OpenFile(name string, flag int, perm os.FileMode) (IFile, error) {
 		return nil, err
 	}
 
-	return &File{underlyingFile: f}, nil
+	return &File{underlyingFile: f, mutex: &sync.Mutex{}}, nil
 }

@@ -37,6 +37,7 @@ func TestWriteAsync(t *testing.T) {
 	})
 
 	strb := "test123"
+	strb2 := []byte("789def")
 
 	ops, n, err := f2.WriteString(strb)
 	assert.Nil(t, err)
@@ -87,6 +88,18 @@ func TestWriteAsync(t *testing.T) {
 
 	ops[0].WaitForDone(10 * time.Second)
 	assert.Equal(t, 6, callbackCalledCount)
+	assert.True(t, ops[0].IsDone())
+
+	ops, n, err = f.WriteAt(strb2, 2)
+	assert.Nil(t, err)
+	assert.Len(t, ops, 1)
+	assert.Equal(t, len(strb2), n)
+
+	ops[0].WaitForStart(10 * time.Second)
+	assert.True(t, ops[0].IsStarted())
+
+	ops[0].WaitForDone(10 * time.Second)
+	assert.Equal(t, 8, callbackCalledCount)
 	assert.True(t, ops[0].IsDone())
 
 	err = f.Close()
