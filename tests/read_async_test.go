@@ -58,10 +58,18 @@ func TestReadAsync(t *testing.T) {
 	assert.Equal(t, ops[0].GetBuffer(), make([]byte, 6))
 
 	// set file position to 0
-	n2, err := f.Seek(0, io.SeekStart)
+	ops, n2, err := f.Seek(0, io.SeekStart)
 
 	assert.Zero(t, n2)
 	assert.Nil(t, err)
+	assert.Len(t, ops, 1)
+
+	ops[0].WaitForStart(10 * time.Second)
+	assert.True(t, ops[0].IsStarted())
+
+	ops[0].WaitForDone(10 * time.Second)
+	assert.Equal(t, 4, callbackCalledCount)
+	assert.True(t, ops[0].IsDone())
 
 	// write some test data
 	strb := []byte("123abc")
@@ -75,14 +83,22 @@ func TestReadAsync(t *testing.T) {
 	assert.True(t, ops2[0].IsStarted())
 
 	ops2[0].WaitForDone(10 * time.Second)
-	assert.Equal(t, 4, callbackCalledCount)
+	assert.Equal(t, 6, callbackCalledCount)
 	assert.True(t, ops2[0].IsDone())
 
 	// set file position to 0
-	n2, err = f.Seek(0, io.SeekStart)
+	ops, n2, err = f.Seek(0, io.SeekStart)
 
 	assert.Zero(t, n2)
 	assert.Nil(t, err)
+	assert.Len(t, ops, 1)
+
+	ops[0].WaitForStart(10 * time.Second)
+	assert.True(t, ops[0].IsStarted())
+
+	ops[0].WaitForDone(10 * time.Second)
+	assert.Equal(t, 8, callbackCalledCount)
+	assert.True(t, ops[0].IsDone())
 
 	// read again, this time with data in the file
 	ops, n, err = f.Read(readed)
@@ -94,7 +110,7 @@ func TestReadAsync(t *testing.T) {
 	assert.True(t, ops[0].IsStarted())
 
 	ops[0].WaitForDone(10 * time.Second)
-	assert.Equal(t, 6, callbackCalledCount)
+	assert.Equal(t, 10, callbackCalledCount)
 	assert.True(t, ops[0].IsDone())
 
 	assert.Nil(t, err)
@@ -111,7 +127,7 @@ func TestReadAsync(t *testing.T) {
 	assert.True(t, ops[0].IsStarted())
 
 	ops[0].WaitForDone(10 * time.Second)
-	assert.Equal(t, 8, callbackCalledCount)
+	assert.Equal(t, 12, callbackCalledCount)
 	assert.True(t, ops[0].IsDone())
 
 	assert.Nil(t, err)

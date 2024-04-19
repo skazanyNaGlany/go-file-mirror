@@ -32,44 +32,53 @@ func TestWriteString(t *testing.T) {
 	str := "123abc"
 	readed := make([]byte, len(str))
 
-	n, err := f.WriteString(str)
+	ops, n, err := f.WriteString(str)
 	assert.Nil(t, err)
 	assert.Equal(t, len(str), n)
+	assert.Empty(t, ops)
 
-	err = f.Sync()
+	ops, err = f.Sync()
 	assert.Nil(t, err)
+	assert.Empty(t, ops)
 
-	ret, err := f.Seek(0, io.SeekStart)
+	ops, ret, err := f.Seek(0, io.SeekStart)
 	assert.Nil(t, err)
 	assert.Zero(t, ret)
+	assert.Empty(t, ops)
 
-	_, n, err = f.Read(readed)
+	ops, n, err = f.Read(readed)
 	assert.Nil(t, err)
 	assert.Equal(t, len(str), n)
+	assert.Empty(t, ops)
 
 	// write other string at 2 position
 	str2 := "defghi"
 	readed = make([]byte, len(str2))
 
-	ret, err = f2.Seek(2, io.SeekStart)
+	ops, ret, err = f2.Seek(2, io.SeekStart)
 	assert.Nil(t, err)
 	assert.Equal(t, int64(2), ret)
+	assert.Empty(t, ops)
 
-	n, err = f2.WriteString(str2)
+	ops, n, err = f2.WriteString(str2)
 	assert.Nil(t, err)
 	assert.Equal(t, len(str), n)
+	assert.Empty(t, ops)
 
-	err = f.Sync()
+	ops, err = f.Sync()
 	assert.Nil(t, err)
+	assert.Empty(t, ops)
 
-	ret, err = f2.Seek(2, io.SeekStart)
+	ops, ret, err = f2.Seek(2, io.SeekStart)
 	assert.Nil(t, err)
 	assert.Equal(t, int64(2), ret)
+	assert.Empty(t, ops)
 
-	_, n, err = f.Read(readed)
+	ops, n, err = f.Read(readed)
 	assert.Nil(t, err)
 	assert.Equal(t, len(str2), n)
 	assert.Equal(t, string(readed), str2)
+	assert.Empty(t, ops)
 
 	f1i, err := f.Stat()
 	assert.Nil(t, err)

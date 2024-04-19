@@ -32,15 +32,18 @@ func TestTruncate(t *testing.T) {
 	strb := []byte("123abc")
 	readed := make([]byte, len(strb))
 
-	_, n, err := f.Write(strb)
+	ops, n, err := f.Write(strb)
 	assert.Nil(t, err)
 	assert.Equal(t, len(strb), n)
+	assert.Empty(t, ops)
 
-	err = f.Sync()
+	ops, err = f.Sync()
 	assert.Nil(t, err)
+	assert.Empty(t, ops)
 
-	err = f.Truncate(2)
+	ops, err = f.Truncate(2)
 	assert.Nil(t, err)
+	assert.Empty(t, ops)
 
 	f1i, err := f.Stat()
 	assert.Nil(t, err)
@@ -50,13 +53,15 @@ func TestTruncate(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, int64(2), f2i.Size())
 
-	ret, err := f2.Seek(0, io.SeekStart)
+	ops, ret, err := f2.Seek(0, io.SeekStart)
 	assert.Nil(t, err)
 	assert.Equal(t, int64(0), ret)
+	assert.Empty(t, ops)
 
-	_, n, err = f2.Read(readed)
+	ops, n, err = f2.Read(readed)
 	assert.Nil(t, err)
 	assert.Equal(t, 2, n)
+	assert.Empty(t, ops)
 
 	err = f.Close()
 	assert.Nil(t, err)

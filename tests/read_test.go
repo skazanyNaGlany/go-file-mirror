@@ -32,41 +32,50 @@ func TestRead(t *testing.T) {
 	strb := []byte("123456abc")
 	readed := make([]byte, 6)
 
-	_, n, err := f.Read(readed)
+	ops, n, err := f.Read(readed)
 	assert.NotNil(t, err)
 	assert.Zero(t, n)
+	assert.Empty(t, ops)
 
-	_, n, err = f2.Read(readed)
+	ops, n, err = f2.Read(readed)
 	assert.NotNil(t, err)
 	assert.Zero(t, n)
+	assert.Empty(t, ops)
 
-	_, n, err = f2.Write(strb)
+	ops, n, err = f2.Write(strb)
 	assert.Nil(t, err)
 	assert.Equal(t, len(strb), n)
+	assert.Empty(t, ops)
 
-	err = f2.Sync()
+	ops, err = f2.Sync()
 	assert.Nil(t, err)
+	assert.Empty(t, ops)
 
 	// cannot read at EOF
-	_, n, err = f.Read(readed)
+	ops, n, err = f.Read(readed)
 	assert.NotNil(t, err)
 	assert.Zero(t, n)
+	assert.Empty(t, ops)
 
-	ret, err := f.Seek(4, io.SeekStart)
+	ops, ret, err := f.Seek(4, io.SeekStart)
 	assert.Nil(t, err)
 	assert.Equal(t, int64(4), ret)
+	assert.Empty(t, ops)
 
-	_, n, err = f.Read(readed)
+	ops, n, err = f.Read(readed)
 	assert.Nil(t, err)
 	assert.Equal(t, n, 5)
+	assert.Empty(t, ops)
 
-	ret, err = f2.Seek(5, io.SeekStart)
+	ops, ret, err = f2.Seek(5, io.SeekStart)
 	assert.Nil(t, err)
 	assert.Equal(t, int64(5), ret)
+	assert.Empty(t, ops)
 
-	_, n, err = f2.Read(readed)
+	ops, n, err = f2.Read(readed)
 	assert.Nil(t, err)
 	assert.Equal(t, n, 4)
+	assert.Empty(t, ops)
 
 	err = f.Close()
 	assert.Nil(t, err)

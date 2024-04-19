@@ -25,13 +25,15 @@ func TestNewFile(t *testing.T) {
 	str := "123abc"
 	readed := make([]byte, len(str))
 
-	n, err := f2.WriteString(str)
+	ops, n, err := f2.WriteString(str)
 	assert.Nil(t, err)
 	assert.Equal(t, len(str), n)
+	assert.Empty(t, ops)
 
-	ret, err := f2.Seek(0, io.SeekStart)
+	ops, ret, err := f2.Seek(0, io.SeekStart)
 	assert.Nil(t, err)
 	assert.Zero(t, ret)
+	assert.Empty(t, ops)
 
 	n, err = f.Read(readed)
 	assert.Nil(t, err)
