@@ -294,6 +294,26 @@ func (fm *FileMirror) execute(operation *AsyncOperation) {
 		if fm.asyncOperationCallback != nil {
 			fm.asyncOperationCallback(operation)
 		}
+	case AOT_SYNC:
+		if mutex := operation.file.GetMutex(); mutex != nil {
+			mutex.Lock()
+			defer mutex.Unlock()
+		}
+
+		operation.started = true
+
+		if fm.asyncOperationCallback != nil {
+			fm.asyncOperationCallback(operation)
+		}
+
+		err := operation.file.GetUnderlyingFile().Sync()
+
+		operation.err = err
+		operation.done = true
+
+		if fm.asyncOperationCallback != nil {
+			fm.asyncOperationCallback(operation)
+		}
 	default:
 		panic("not implemented")
 	}

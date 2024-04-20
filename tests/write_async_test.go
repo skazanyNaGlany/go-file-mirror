@@ -51,10 +51,21 @@ func TestWriteAsync(t *testing.T) {
 	assert.Equal(t, 2, callbackCalledCount)
 	assert.True(t, ops[0].IsDone())
 
-	// no data to read from empty file
 	assert.Nil(t, ops[0].GetLastResultError())
 	assert.Equal(t, int(ops[0].GetLastResultInt()), 7)
 	assert.Equal(t, ops[0].GetStringBuffer(), strb)
+
+	ops, err = f2.Sync()
+	assert.Nil(t, err)
+	assert.Equal(t, len(strb), n)
+	assert.Len(t, ops, 1)
+
+	ops[0].WaitForStart(10 * time.Second)
+	assert.True(t, ops[0].IsStarted())
+
+	ops[0].WaitForDone(10 * time.Second)
+	assert.Equal(t, 4, callbackCalledCount)
+	assert.True(t, ops[0].IsDone())
 
 	// set file position to 0
 	ops, n2, err := f.Seek(0, io.SeekStart)
@@ -67,7 +78,7 @@ func TestWriteAsync(t *testing.T) {
 	assert.True(t, ops[0].IsStarted())
 
 	ops[0].WaitForDone(10 * time.Second)
-	assert.Equal(t, 4, callbackCalledCount)
+	assert.Equal(t, 6, callbackCalledCount)
 	assert.True(t, ops[0].IsDone())
 
 	// read at 0 position
@@ -87,7 +98,7 @@ func TestWriteAsync(t *testing.T) {
 	assert.True(t, ops[0].IsStarted())
 
 	ops[0].WaitForDone(10 * time.Second)
-	assert.Equal(t, 6, callbackCalledCount)
+	assert.Equal(t, 8, callbackCalledCount)
 	assert.True(t, ops[0].IsDone())
 
 	ops, n, err = f.WriteAt(strb2, 2)
@@ -99,7 +110,7 @@ func TestWriteAsync(t *testing.T) {
 	assert.True(t, ops[0].IsStarted())
 
 	ops[0].WaitForDone(10 * time.Second)
-	assert.Equal(t, 8, callbackCalledCount)
+	assert.Equal(t, 10, callbackCalledCount)
 	assert.True(t, ops[0].IsDone())
 
 	err = f.Close()
