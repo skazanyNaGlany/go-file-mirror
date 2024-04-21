@@ -50,12 +50,14 @@ func TestReadAsync(t *testing.T) {
 			assert.Equal(t, gofilemirror.AOT_SEEK, operation.GetType())
 			assert.Equal(t, f, operation.GetFile())
 			assert.Equal(t, io.SeekStart, operation.GetWhence())
+			assert.Equal(t, int64(0), operation.GetOffset())
 			assert.True(t, operation.IsStarted())
 			assert.False(t, operation.IsDone())
 		case 3:
 			assert.Equal(t, gofilemirror.AOT_SEEK, operation.GetType())
 			assert.Equal(t, f, operation.GetFile())
 			assert.Equal(t, io.SeekStart, operation.GetWhence())
+			assert.Equal(t, int64(0), operation.GetOffset())
 			assert.True(t, operation.IsStarted())
 			assert.True(t, operation.IsDone())
 		case 4:

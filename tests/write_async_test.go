@@ -33,12 +33,78 @@ func TestWriteAsync(t *testing.T) {
 	callbackCalledCount := 0
 
 	fm.SetAsyncOperationCallback(func(operation *gofilemirror.AsyncOperation) {
+		switch callbackCalledCount {
+		case 0:
+			assert.Equal(t, gofilemirror.AOT_WRITE_STRING, operation.GetType())
+			assert.Equal(t, f2, operation.GetFile())
+			assert.NotEmpty(t, operation.GetStringBuffer())
+			assert.True(t, operation.IsStarted())
+			assert.False(t, operation.IsDone())
+		case 1:
+			assert.Equal(t, gofilemirror.AOT_WRITE_STRING, operation.GetType())
+			assert.Equal(t, f2, operation.GetFile())
+			assert.NotEmpty(t, operation.GetStringBuffer())
+			assert.True(t, operation.IsStarted())
+			assert.True(t, operation.IsDone())
+		case 2:
+			assert.Equal(t, gofilemirror.AOT_SYNC, operation.GetType())
+			assert.Equal(t, f2, operation.GetFile())
+			assert.True(t, operation.IsStarted())
+			assert.False(t, operation.IsDone())
+		case 3:
+			assert.Equal(t, gofilemirror.AOT_SYNC, operation.GetType())
+			assert.Equal(t, f2, operation.GetFile())
+			assert.True(t, operation.IsStarted())
+			assert.True(t, operation.IsDone())
+		case 4:
+			assert.Equal(t, gofilemirror.AOT_SEEK, operation.GetType())
+			assert.Equal(t, f2, operation.GetFile())
+			assert.Equal(t, io.SeekStart, operation.GetWhence())
+			assert.Equal(t, int64(0), operation.GetOffset())
+			assert.True(t, operation.IsStarted())
+			assert.False(t, operation.IsDone())
+		case 5:
+			assert.Equal(t, gofilemirror.AOT_SEEK, operation.GetType())
+			assert.Equal(t, f2, operation.GetFile())
+			assert.Equal(t, io.SeekStart, operation.GetWhence())
+			assert.Equal(t, int64(0), operation.GetOffset())
+			assert.True(t, operation.IsStarted())
+			assert.True(t, operation.IsDone())
+		case 6:
+			assert.Equal(t, gofilemirror.AOT_TRUNCATE, operation.GetType())
+			assert.Equal(t, f2, operation.GetFile())
+			assert.Equal(t, int64(2), operation.GetSize())
+			assert.True(t, operation.IsStarted())
+			assert.False(t, operation.IsDone())
+		case 7:
+			assert.Equal(t, gofilemirror.AOT_TRUNCATE, operation.GetType())
+			assert.Equal(t, f2, operation.GetFile())
+			assert.Equal(t, int64(2), operation.GetSize())
+			assert.True(t, operation.IsStarted())
+			assert.True(t, operation.IsDone())
+		case 8:
+			assert.Equal(t, gofilemirror.AOT_WRITE_AT, operation.GetType())
+			assert.Equal(t, f2, operation.GetFile())
+			assert.NotNil(t, operation.GetBuffer())
+			assert.Equal(t, int64(2), operation.GetOffset())
+			assert.True(t, operation.IsStarted())
+			assert.False(t, operation.IsDone())
+		case 9:
+			assert.Equal(t, gofilemirror.AOT_WRITE_AT, operation.GetType())
+			assert.Equal(t, f2, operation.GetFile())
+			assert.NotNil(t, operation.GetBuffer())
+			assert.Equal(t, int64(2), operation.GetOffset())
+			assert.True(t, operation.IsStarted())
+			assert.True(t, operation.IsDone())
+		}
+
 		callbackCalledCount++
 	})
 
 	strb := "test123"
 	strb2 := []byte("789def")
 
+	// case 0-1
 	ops, n, err := f2.WriteString(strb)
 	assert.Nil(t, err)
 	assert.Equal(t, len(strb), n)
@@ -55,6 +121,7 @@ func TestWriteAsync(t *testing.T) {
 	assert.Equal(t, int(ops[0].GetLastResultInt()), 7)
 	assert.Equal(t, ops[0].GetStringBuffer(), strb)
 
+	// case 2-3
 	ops, err = f2.Sync()
 	assert.Nil(t, err)
 	assert.Equal(t, len(strb), n)
@@ -68,6 +135,7 @@ func TestWriteAsync(t *testing.T) {
 	assert.True(t, ops[0].IsDone())
 
 	// set file position to 0
+	// case 4-5
 	ops, n2, err := f.Seek(0, io.SeekStart)
 
 	assert.Zero(t, n2)
@@ -90,6 +158,7 @@ func TestWriteAsync(t *testing.T) {
 	assert.Empty(t, ops)
 	assert.Equal(t, strb, string(readed))
 
+	// case 6-7
 	ops, err = f2.Truncate(2)
 	assert.Nil(t, err)
 	assert.Len(t, ops, 1)
@@ -101,6 +170,7 @@ func TestWriteAsync(t *testing.T) {
 	assert.Equal(t, 8, callbackCalledCount)
 	assert.True(t, ops[0].IsDone())
 
+	// case 8-9
 	ops, n, err = f.WriteAt(strb2, 2)
 	assert.Nil(t, err)
 	assert.Len(t, ops, 1)
