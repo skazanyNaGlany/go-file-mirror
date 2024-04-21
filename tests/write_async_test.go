@@ -101,6 +101,8 @@ func TestWriteAsync(t *testing.T) {
 		callbackCalledCount++
 	})
 
+	assert.NotNil(t, fm.GetAsyncOperationCallback())
+
 	strb := "test123"
 	strb2 := []byte("789def")
 

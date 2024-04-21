@@ -115,6 +115,8 @@ func TestReadAsync(t *testing.T) {
 		callbackCalledCount++
 	})
 
+	assert.NotNil(t, fm.GetAsyncOperationCallback())
+
 	// read at 0 position
 	readed := make([]byte, 6)
 
