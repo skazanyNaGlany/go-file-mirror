@@ -45,4 +45,6 @@ func TestNewFile(t *testing.T) {
 
 	f2.Close()
 	assert.Nil(t, err)
+
+	assert.True(t, fm.RemoveWritingFile(f2))
 }

@@ -224,6 +224,10 @@ func TestReadAsync(t *testing.T) {
 	err = f.Close()
 	assert.Nil(t, err)
 
+	assert.True(t, fm.RemoveReadingFile(f))
+	assert.True(t, fm.RemoveWritingFile(f))
+	assert.True(t, fm.RemoveAsyncFile(f))
+
 	// all files within that FileMirror instance
 	// have been closed, calling Close() again
 	// should return an error

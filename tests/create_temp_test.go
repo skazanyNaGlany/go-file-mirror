@@ -30,10 +30,16 @@ func TestCreateTemp(t *testing.T) {
 	err = f.Close()
 	assert.Nil(t, err)
 
+	assert.True(t, fm.RemoveReadingFile(f))
+	assert.True(t, fm.RemoveWritingFile(f))
+
 	// all files within that FileMirror instance
 	// have been closed, calling Close() again
 	// should return an error
 	err = f2.Close()
 	assert.NotNil(t, err)
 	assert.ErrorAs(t, err, &os.ErrClosed)
+
+	assert.True(t, fm.RemoveReadingFile(f2))
+	assert.True(t, fm.RemoveWritingFile(f2))
 }

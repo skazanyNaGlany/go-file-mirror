@@ -14,9 +14,9 @@ func TestCreate(t *testing.T) {
 	f, err := gofilemirror.Create("/tmp/testing_file_mirror")
 	assert.Nil(t, err)
 	assert.NotNil(t, f)
-
 	assert.True(t, fm.AddReadingFile(f))
 
 	err = f.Close()
 	assert.Nil(t, err)
+	assert.True(t, fm.RemoveReadingFile(f))
 }
