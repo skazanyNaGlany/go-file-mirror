@@ -33,12 +33,90 @@ func TestReadAsync(t *testing.T) {
 	callbackCalledCount := 0
 
 	fm.SetAsyncOperationCallback(func(operation *gofilemirror.AsyncOperation) {
+		switch callbackCalledCount {
+		case 0:
+			assert.Equal(t, gofilemirror.AOT_READ, operation.GetType())
+			assert.Equal(t, f, operation.GetFile())
+			assert.NotNil(t, f, operation.GetBuffer())
+			assert.True(t, operation.IsStarted())
+			assert.False(t, operation.IsDone())
+		case 1:
+			assert.Equal(t, gofilemirror.AOT_READ, operation.GetType())
+			assert.Equal(t, f, operation.GetFile())
+			assert.NotNil(t, f, operation.GetBuffer())
+			assert.True(t, operation.IsStarted())
+			assert.True(t, operation.IsDone())
+		case 2:
+			assert.Equal(t, gofilemirror.AOT_SEEK, operation.GetType())
+			assert.Equal(t, f, operation.GetFile())
+			assert.Equal(t, io.SeekStart, operation.GetWhence())
+			assert.True(t, operation.IsStarted())
+			assert.False(t, operation.IsDone())
+		case 3:
+			assert.Equal(t, gofilemirror.AOT_SEEK, operation.GetType())
+			assert.Equal(t, f, operation.GetFile())
+			assert.Equal(t, io.SeekStart, operation.GetWhence())
+			assert.True(t, operation.IsStarted())
+			assert.True(t, operation.IsDone())
+		case 4:
+			assert.Equal(t, gofilemirror.AOT_WRITE, operation.GetType())
+			assert.Equal(t, f, operation.GetFile())
+			assert.NotNil(t, operation.GetBuffer())
+			assert.True(t, operation.IsStarted())
+			assert.False(t, operation.IsDone())
+		case 5:
+			assert.Equal(t, gofilemirror.AOT_WRITE, operation.GetType())
+			assert.Equal(t, f, operation.GetFile())
+			assert.NotNil(t, operation.GetBuffer())
+			assert.True(t, operation.IsStarted())
+			assert.True(t, operation.IsDone())
+		case 6:
+			assert.Equal(t, gofilemirror.AOT_SEEK, operation.GetType())
+			assert.Equal(t, f, operation.GetFile())
+			assert.Equal(t, io.SeekStart, operation.GetWhence())
+			assert.True(t, operation.IsStarted())
+			assert.False(t, operation.IsDone())
+		case 7:
+			assert.Equal(t, gofilemirror.AOT_SEEK, operation.GetType())
+			assert.Equal(t, f, operation.GetFile())
+			assert.Equal(t, io.SeekStart, operation.GetWhence())
+			assert.True(t, operation.IsStarted())
+			assert.True(t, operation.IsDone())
+		case 8:
+			assert.Equal(t, gofilemirror.AOT_READ, operation.GetType())
+			assert.Equal(t, f, operation.GetFile())
+			assert.NotNil(t, f, operation.GetBuffer())
+			assert.True(t, operation.IsStarted())
+			assert.False(t, operation.IsDone())
+		case 9:
+			assert.Equal(t, gofilemirror.AOT_READ, operation.GetType())
+			assert.Equal(t, f, operation.GetFile())
+			assert.NotNil(t, f, operation.GetBuffer())
+			assert.True(t, operation.IsStarted())
+			assert.True(t, operation.IsDone())
+		case 10:
+			assert.Equal(t, gofilemirror.AOT_READ_AT, operation.GetType())
+			assert.Equal(t, f, operation.GetFile())
+			assert.Equal(t, int64(2), operation.GetOffset())
+			assert.NotNil(t, f, operation.GetBuffer())
+			assert.True(t, operation.IsStarted())
+			assert.False(t, operation.IsDone())
+		case 11:
+			assert.Equal(t, gofilemirror.AOT_READ_AT, operation.GetType())
+			assert.Equal(t, f, operation.GetFile())
+			assert.Equal(t, int64(2), operation.GetOffset())
+			assert.NotNil(t, f, operation.GetBuffer())
+			assert.True(t, operation.IsStarted())
+			assert.True(t, operation.IsDone())
+		}
+
 		callbackCalledCount++
 	})
 
 	// read at 0 position
 	readed := make([]byte, 6)
 
+	// 0-1 case
 	ops, n, err := f.Read(readed)
 	assert.Nil(t, err)
 	assert.Zero(t, n)
@@ -58,6 +136,7 @@ func TestReadAsync(t *testing.T) {
 	assert.Equal(t, ops[0].GetBuffer(), make([]byte, 6))
 
 	// set file position to 0
+	// 2-3 case
 	ops, n2, err := f.Seek(0, io.SeekStart)
 
 	assert.Zero(t, n2)
@@ -74,6 +153,7 @@ func TestReadAsync(t *testing.T) {
 	// write some test data
 	strb := []byte("123abc")
 
+	// 4-5 case
 	ops2, n, err := f2.Write(strb)
 	assert.Nil(t, err)
 	assert.Equal(t, len(strb), n)
@@ -87,6 +167,7 @@ func TestReadAsync(t *testing.T) {
 	assert.True(t, ops2[0].IsDone())
 
 	// set file position to 0
+	// 6-7 case
 	ops, n2, err = f.Seek(0, io.SeekStart)
 
 	assert.Zero(t, n2)
@@ -101,6 +182,7 @@ func TestReadAsync(t *testing.T) {
 	assert.True(t, ops[0].IsDone())
 
 	// read again, this time with data in the file
+	// case 8-9
 	ops, n, err = f.Read(readed)
 	assert.Nil(t, err)
 	assert.Zero(t, n)
@@ -118,6 +200,7 @@ func TestReadAsync(t *testing.T) {
 	assert.Equal(t, ops[0].GetBuffer(), strb)
 
 	// read using ReadAt
+	// case 10-11
 	ops, n, err = f.ReadAt(readed, 2)
 	assert.Nil(t, err)
 	assert.Zero(t, n)
