@@ -268,8 +268,6 @@ func (fm *FileMirror) execute(operation *AsyncOperation) {
 		if fm.asyncOperationCallback != nil {
 			fm.asyncOperationCallback(operation)
 		}
-	default:
-		panic("not implemented")
 	}
 }
 

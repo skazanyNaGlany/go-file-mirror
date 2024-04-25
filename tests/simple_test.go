@@ -63,6 +63,13 @@ func TestSimple(t *testing.T) {
 	assert.False(t, fm.IsFileAsync(f))
 	assert.False(t, fm.IsFileAsync(f2))
 
+	fm.SetReadingFile(f)
+	assert.True(t, fm.AddWritingFile(f))
+	assert.True(t, fm.AddWritingFile(f2))
+
+	fm.RemoveAllFiles()
+	assert.Empty(t, fm.GetAllFiles())
+
 	// all files needs to be addes to the FileMirror instance
 	// to close it automatically when closing that FileMirror
 	// instance
