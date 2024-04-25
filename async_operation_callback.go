@@ -1,3 +1,3 @@
 package gofilemirror
 
-type AsyncOperationCallback func(operation *AsyncOperation)
+type AsyncOperationCallback func(operation *AsyncOperation) bool

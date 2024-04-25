@@ -1,11 +1,12 @@
 package gofilemirror
 
 import (
+	"os"
 	"time"
 )
 
 type AsyncOperation struct {
-	file         IFile
+	file         *os.File
 	_type        AsyncOperationType
 	err          error
 	resultInt    int64
@@ -18,7 +19,7 @@ type AsyncOperation struct {
 	done         bool
 }
 
-func (ao *AsyncOperation) GetFile() IFile {
+func (ao *AsyncOperation) GetFile() *os.File {
 	return ao.file
 }
 
