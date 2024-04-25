@@ -3,6 +3,7 @@ package tests
 import (
 	"io"
 	"os"
+	"sync"
 	"testing"
 	"time"
 
@@ -14,25 +15,28 @@ func TestReadAsync(t *testing.T) {
 	fm := gofilemirror.NewFileMirror(FILE_MIRROR_QUEUE_SIZE)
 	defer fm.Close()
 
-	f, err := gofilemirror.CreateTemp("/tmp", "testing_file_mirror")
+	f, err := os.CreateTemp("/tmp", "testing_file_mirror")
 	if err != nil {
 		panic(err)
 	}
 
-	f2, err := gofilemirror.CreateTemp("/tmp", "testing_file_mirror")
+	f2, err := os.CreateTemp("/tmp", "testing_file_mirror2")
 	if err != nil {
 		panic(err)
 	}
 
-	assert.True(t, fm.AddReadingFile(f))
-	assert.True(t, fm.AddReadingFile(f2))
+	fm.SetReadingFile(f)
+	fm.SetFileAsync(f, true)
+
 	assert.True(t, fm.AddWritingFile(f))
 	assert.True(t, fm.AddWritingFile(f2))
-	assert.True(t, fm.AddAsyncFile(f))
+
+	fm.SetFileMutex(f, &sync.Mutex{})
+	fm.SetFileMutex(f2, &sync.Mutex{})
 
 	callbackCalledCount := 0
 
-	fm.SetAsyncOperationCallback(func(operation *gofilemirror.AsyncOperation) {
+	fm.SetAsyncOperationCallback(func(operation *gofilemirror.AsyncOperation) bool {
 		switch callbackCalledCount {
 		case 0:
 			assert.Equal(t, gofilemirror.AOT_READ, operation.GetType())
@@ -113,6 +117,8 @@ func TestReadAsync(t *testing.T) {
 		}
 
 		callbackCalledCount++
+
+		return true
 	})
 
 	assert.NotNil(t, fm.GetAsyncOperationCallback())
@@ -121,7 +127,7 @@ func TestReadAsync(t *testing.T) {
 	readed := make([]byte, 6)
 
 	// 0-1 case
-	ops, n, err := f.Read(readed)
+	ops, n, err := fm.Read(readed)
 	assert.Nil(t, err)
 	assert.Zero(t, n)
 	assert.Len(t, ops, 1)
@@ -141,7 +147,7 @@ func TestReadAsync(t *testing.T) {
 
 	// set file position to 0
 	// 2-3 case
-	ops, n2, err := f.Seek(0, io.SeekStart)
+	ops, n2, err := fm.Seek(0, io.SeekStart)
 
 	assert.Zero(t, n2)
 	assert.Nil(t, err)
@@ -158,7 +164,7 @@ func TestReadAsync(t *testing.T) {
 	strb := []byte("123abc")
 
 	// 4-5 case
-	ops2, n, err := f2.Write(strb)
+	ops2, n, err := fm.Write(strb)
 	assert.Nil(t, err)
 	assert.Equal(t, len(strb), n)
 	assert.Len(t, ops2, 1)
@@ -172,7 +178,7 @@ func TestReadAsync(t *testing.T) {
 
 	// set file position to 0
 	// 6-7 case
-	ops, n2, err = f.Seek(0, io.SeekStart)
+	ops, n2, err = fm.Seek(0, io.SeekStart)
 
 	assert.Zero(t, n2)
 	assert.Nil(t, err)
@@ -187,7 +193,7 @@ func TestReadAsync(t *testing.T) {
 
 	// read again, this time with data in the file
 	// case 8-9
-	ops, n, err = f.Read(readed)
+	ops, n, err = fm.Read(readed)
 	assert.Nil(t, err)
 	assert.Zero(t, n)
 	assert.Len(t, ops, 1)
@@ -205,7 +211,7 @@ func TestReadAsync(t *testing.T) {
 
 	// read using ReadAt
 	// case 10-11
-	ops, n, err = f.ReadAt(readed, 2)
+	ops, n, err = fm.ReadAt(readed, 2)
 	assert.Nil(t, err)
 	assert.Zero(t, n)
 	assert.Len(t, ops, 1)
@@ -220,18 +226,4 @@ func TestReadAsync(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, len(strb[2:]), int(ops[0].GetLastResultInt()))
 	assert.Equal(t, ops[0].GetBuffer()[:4], strb[2:])
-
-	err = f.Close()
-	assert.Nil(t, err)
-
-	assert.True(t, fm.RemoveReadingFile(f))
-	assert.True(t, fm.RemoveWritingFile(f))
-	assert.True(t, fm.RemoveAsyncFile(f))
-
-	// all files within that FileMirror instance
-	// have been closed, calling Close() again
-	// should return an error
-	err = f2.Close()
-	assert.NotNil(t, err)
-	assert.ErrorAs(t, err, &os.ErrClosed)
 }

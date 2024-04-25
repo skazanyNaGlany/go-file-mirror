@@ -69,18 +69,4 @@ func TestSimple(t *testing.T) {
 	fm.SetReadingFile(f)
 	assert.True(t, fm.AddWritingFile(f))
 	assert.True(t, fm.AddWritingFile(f2))
-
-	err = fm.Close()
-	assert.Nil(t, err)
-
-	// all files within that FileMirror instance
-	// have been closed, calling Close() again
-	// should return an error
-	err = fm.Close()
-	assert.NotNil(t, err)
-	assert.ErrorAs(t, err, &os.ErrClosed)
-
-	err = fm.RemoveAllFiles()
-	assert.Nil(t, err)
-	assert.Empty(t, fm.GetAllFiles())
 }

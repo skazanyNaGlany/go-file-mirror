@@ -109,7 +109,9 @@ func (fm *FileMirror) execute(operation *AsyncOperation) {
 		operation.started = true
 
 		if fm.asyncOperationCallback != nil {
-			fm.asyncOperationCallback(operation)
+			if !fm.asyncOperationCallback(operation) {
+				return
+			}
 		}
 
 		n, err := operation.file.Read(operation.buffer)
@@ -129,8 +131,8 @@ func (fm *FileMirror) execute(operation *AsyncOperation) {
 
 		operation.started = true
 
-		if fm.asyncOperationCallback != nil {
-			fm.asyncOperationCallback(operation)
+		if !fm.asyncOperationCallback(operation) {
+			return
 		}
 
 		n, err := operation.file.ReadAt(operation.buffer, operation.offset)
@@ -150,8 +152,8 @@ func (fm *FileMirror) execute(operation *AsyncOperation) {
 
 		operation.started = true
 
-		if fm.asyncOperationCallback != nil {
-			fm.asyncOperationCallback(operation)
+		if !fm.asyncOperationCallback(operation) {
+			return
 		}
 
 		n, err := operation.file.Write(operation.buffer)
@@ -171,8 +173,8 @@ func (fm *FileMirror) execute(operation *AsyncOperation) {
 
 		operation.started = true
 
-		if fm.asyncOperationCallback != nil {
-			fm.asyncOperationCallback(operation)
+		if !fm.asyncOperationCallback(operation) {
+			return
 		}
 
 		n, err := operation.file.WriteAt(operation.buffer, operation.offset)
@@ -192,8 +194,8 @@ func (fm *FileMirror) execute(operation *AsyncOperation) {
 
 		operation.started = true
 
-		if fm.asyncOperationCallback != nil {
-			fm.asyncOperationCallback(operation)
+		if !fm.asyncOperationCallback(operation) {
+			return
 		}
 
 		n, err := operation.file.WriteString(operation.stringBuffer)
@@ -213,8 +215,8 @@ func (fm *FileMirror) execute(operation *AsyncOperation) {
 
 		operation.started = true
 
-		if fm.asyncOperationCallback != nil {
-			fm.asyncOperationCallback(operation)
+		if !fm.asyncOperationCallback(operation) {
+			return
 		}
 
 		err := operation.file.Truncate(operation.size)
@@ -233,8 +235,8 @@ func (fm *FileMirror) execute(operation *AsyncOperation) {
 
 		operation.started = true
 
-		if fm.asyncOperationCallback != nil {
-			fm.asyncOperationCallback(operation)
+		if !fm.asyncOperationCallback(operation) {
+			return
 		}
 
 		ret, err := operation.file.Seek(operation.offset, operation.whence)
@@ -254,8 +256,8 @@ func (fm *FileMirror) execute(operation *AsyncOperation) {
 
 		operation.started = true
 
-		if fm.asyncOperationCallback != nil {
-			fm.asyncOperationCallback(operation)
+		if !fm.asyncOperationCallback(operation) {
+			return
 		}
 
 		err := operation.file.Sync()

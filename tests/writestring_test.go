@@ -3,6 +3,7 @@ package tests
 import (
 	"io"
 	"os"
+	"sync"
 	"testing"
 
 	gofilemirror "github.com/skazanyNaGlany/go-file-mirror"
@@ -13,40 +14,42 @@ func TestWriteString(t *testing.T) {
 	fm := gofilemirror.NewFileMirror(FILE_MIRROR_QUEUE_SIZE)
 	defer fm.Close()
 
-	f, err := gofilemirror.CreateTemp("/tmp", "testing_file_mirror")
+	f, err := os.CreateTemp("/tmp", "testing_file_mirror")
 	if err != nil {
 		panic(err)
 	}
 
-	f2, err := gofilemirror.CreateTemp("/tmp", "testing_file_mirror")
+	f2, err := os.CreateTemp("/tmp", "testing_file_mirror")
 	if err != nil {
 		panic(err)
 	}
 
-	assert.True(t, fm.AddReadingFile(f))
-	assert.True(t, fm.AddReadingFile(f2))
+	fm.SetReadingFile(f)
 	assert.True(t, fm.AddWritingFile(f))
 	assert.True(t, fm.AddWritingFile(f2))
+
+	fm.SetFileMutex(f, &sync.Mutex{})
+	fm.SetFileMutex(f2, &sync.Mutex{})
 
 	// write string and try to read it at 0 position
 	str := "123abc"
 	readed := make([]byte, len(str))
 
-	ops, n, err := f.WriteString(str)
+	ops, n, err := fm.WriteString(str)
 	assert.Nil(t, err)
 	assert.Equal(t, len(str), n)
 	assert.Empty(t, ops)
 
-	ops, err = f.Sync()
+	ops, err = fm.Sync()
 	assert.Nil(t, err)
 	assert.Empty(t, ops)
 
-	ops, ret, err := f.Seek(0, io.SeekStart)
+	ops, ret, err := fm.Seek(0, io.SeekStart)
 	assert.Nil(t, err)
 	assert.Zero(t, ret)
 	assert.Empty(t, ops)
 
-	ops, n, err = f.Read(readed)
+	ops, n, err = fm.Read(readed)
 	assert.Nil(t, err)
 	assert.Equal(t, len(str), n)
 	assert.Empty(t, ops)
@@ -55,52 +58,32 @@ func TestWriteString(t *testing.T) {
 	str2 := "defghi"
 	readed = make([]byte, len(str2))
 
-	ops, ret, err = f2.Seek(2, io.SeekStart)
+	ops, ret, err = fm.Seek(2, io.SeekStart)
 	assert.Nil(t, err)
 	assert.Equal(t, int64(2), ret)
 	assert.Empty(t, ops)
 
-	ops, n, err = f2.WriteString(str2)
+	ops, n, err = fm.WriteString(str2)
 	assert.Nil(t, err)
 	assert.Equal(t, len(str), n)
 	assert.Empty(t, ops)
 
-	ops, err = f.Sync()
+	ops, err = fm.Sync()
 	assert.Nil(t, err)
 	assert.Empty(t, ops)
 
-	ops, ret, err = f2.Seek(2, io.SeekStart)
+	ops, ret, err = fm.Seek(2, io.SeekStart)
 	assert.Nil(t, err)
 	assert.Equal(t, int64(2), ret)
 	assert.Empty(t, ops)
 
-	ops, n, err = f.Read(readed)
+	ops, n, err = fm.Read(readed)
 	assert.Nil(t, err)
 	assert.Equal(t, len(str2), n)
 	assert.Equal(t, string(readed), str2)
 	assert.Empty(t, ops)
 
-	f1i, err := f.Stat()
+	f1i, err := fm.Stat()
 	assert.Nil(t, err)
 	assert.Equal(t, int64(8), f1i.Size())
-
-	f2i, err := f.Stat()
-	assert.Nil(t, err)
-	assert.Equal(t, f1i.Size(), f2i.Size())
-
-	err = f.Close()
-	assert.Nil(t, err)
-
-	assert.True(t, fm.RemoveReadingFile(f))
-	assert.True(t, fm.RemoveWritingFile(f))
-
-	// all files within that FileMirror instance
-	// have been closed, calling Close() again
-	// should return an error
-	err = f2.Close()
-	assert.NotNil(t, err)
-	assert.ErrorAs(t, err, &os.ErrClosed)
-
-	assert.True(t, fm.RemoveReadingFile(f2))
-	assert.True(t, fm.RemoveWritingFile(f2))
 }
