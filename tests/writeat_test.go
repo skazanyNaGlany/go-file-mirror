@@ -35,17 +35,17 @@ func TestWriteAt(t *testing.T) {
 	strb2 := []byte("456def")
 	readed := make([]byte, len(strb))
 
-	ops, n, err := fm.WriteAt(strb, 0)
+	ops, n, err := fm.WriteAt(strb, 0, nil)
 	assert.Nil(t, err)
 	assert.Equal(t, len(strb), n)
 	assert.Empty(t, ops)
 
-	ops, n, err = fm.WriteAt(strb2, int64(len(strb)))
+	ops, n, err = fm.WriteAt(strb2, int64(len(strb)), nil)
 	assert.Nil(t, err)
 	assert.Equal(t, len(strb), n)
 	assert.Empty(t, ops)
 
-	ops, n, err = fm.ReadAt(readed, int64(len(strb)))
+	ops, n, err = fm.ReadAt(readed, int64(len(strb)), nil)
 	assert.Nil(t, err)
 	assert.Equal(t, len(strb), n)
 	assert.Empty(t, ops)

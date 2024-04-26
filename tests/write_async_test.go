@@ -112,7 +112,7 @@ func TestWriteAsync(t *testing.T) {
 	strb2 := []byte("789def")
 
 	// case 0-1
-	ops, n, err := fm.WriteString(strb)
+	ops, n, err := fm.WriteString(strb, nil)
 	assert.Nil(t, err)
 	assert.Equal(t, len(strb), n)
 	assert.Len(t, ops, 1)
@@ -129,7 +129,7 @@ func TestWriteAsync(t *testing.T) {
 	assert.Equal(t, ops[0].GetStringBuffer(), strb)
 
 	// case 2-3
-	ops, err = fm.Sync()
+	ops, err = fm.Sync(nil)
 	assert.Nil(t, err)
 	assert.Equal(t, len(strb), n)
 	assert.Len(t, ops, 1)
@@ -143,7 +143,7 @@ func TestWriteAsync(t *testing.T) {
 
 	// set file position to 0
 	// case 4-5
-	ops, n2, err := fm.Seek(0, io.SeekStart)
+	ops, n2, err := fm.Seek(0, io.SeekStart, nil)
 
 	assert.Zero(t, n2)
 	assert.Nil(t, err)
@@ -159,14 +159,14 @@ func TestWriteAsync(t *testing.T) {
 	// read at 0 position
 	readed := make([]byte, len(strb))
 
-	ops, n, err = fm.Read(readed)
+	ops, n, err = fm.Read(readed, nil)
 	assert.Nil(t, err)
 	assert.Equal(t, n, len(strb))
 	assert.Empty(t, ops)
 	assert.Equal(t, strb, string(readed))
 
 	// case 6-7
-	ops, err = fm.Truncate(2)
+	ops, err = fm.Truncate(2, nil)
 	assert.Nil(t, err)
 	assert.Len(t, ops, 1)
 
@@ -178,7 +178,7 @@ func TestWriteAsync(t *testing.T) {
 	assert.True(t, ops[0].IsDone())
 
 	// case 8-9
-	ops, n, err = fm.WriteAt(strb2, 2)
+	ops, n, err = fm.WriteAt(strb2, 2, nil)
 	assert.Nil(t, err)
 	assert.Len(t, ops, 1)
 	assert.Equal(t, len(strb2), n)

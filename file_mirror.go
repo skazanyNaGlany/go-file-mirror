@@ -314,7 +314,10 @@ func (fm *FileMirror) RemoveAllFiles() error {
 	return nil
 }
 
-func (fm *FileMirror) Read(b []byte) (operations []*AsyncOperation, n int, err error) {
+func (fm *FileMirror) Read(
+	b []byte,
+	asyncOpUserData any,
+) (operations []*AsyncOperation, n int, err error) {
 	if fm.readingFile == nil {
 		return nil, 0, ErrNoFileToRead
 	}
@@ -327,6 +330,7 @@ func (fm *FileMirror) Read(b []byte) (operations []*AsyncOperation, n int, err e
 		asyncOp._type = AOT_READ
 		asyncOp.file = file
 		asyncOp.buffer = make([]byte, len(b))
+		asyncOp.userData = asyncOpUserData
 
 		operations = append(operations, &asyncOp)
 
@@ -348,6 +352,7 @@ func (fm *FileMirror) Read(b []byte) (operations []*AsyncOperation, n int, err e
 func (fm *FileMirror) ReadAt(
 	b []byte,
 	off int64,
+	asyncOpUserData any,
 ) (operations []*AsyncOperation, n int, err error) {
 	if fm.readingFile == nil {
 		return nil, 0, ErrNoFileToRead
@@ -362,6 +367,7 @@ func (fm *FileMirror) ReadAt(
 		asyncOp.file = file
 		asyncOp.buffer = make([]byte, len(b))
 		asyncOp.offset = off
+		asyncOp.userData = asyncOpUserData
 
 		operations = append(operations, &asyncOp)
 
@@ -383,6 +389,7 @@ func (fm *FileMirror) ReadAt(
 func (fm *FileMirror) Seek(
 	offset int64,
 	whence int,
+	asyncOpUserData any,
 ) (operations []*AsyncOperation, ret int64, err error) {
 	files := fm.GetAllFiles()
 
@@ -398,6 +405,7 @@ func (fm *FileMirror) Seek(
 			asyncOp.file = file
 			asyncOp.offset = offset
 			asyncOp.whence = whence
+			asyncOp.userData = asyncOpUserData
 
 			operations = append(operations, &asyncOp)
 
@@ -432,7 +440,9 @@ func (fm *FileMirror) Stat() (os.FileInfo, error) {
 	return fm.readingFile.Stat()
 }
 
-func (fm *FileMirror) Sync() (operations []*AsyncOperation, err error) {
+func (fm *FileMirror) Sync(
+	asyncOpUserData any,
+) (operations []*AsyncOperation, err error) {
 	files := fm.GetAllFiles()
 
 	if len(files) == 0 {
@@ -445,6 +455,7 @@ func (fm *FileMirror) Sync() (operations []*AsyncOperation, err error) {
 
 			asyncOp._type = AOT_SYNC
 			asyncOp.file = file
+			asyncOp.userData = asyncOpUserData
 
 			operations = append(operations, &asyncOp)
 
@@ -464,7 +475,10 @@ func (fm *FileMirror) Sync() (operations []*AsyncOperation, err error) {
 	return operations, nil
 }
 
-func (fm *FileMirror) Truncate(size int64) (operations []*AsyncOperation, err error) {
+func (fm *FileMirror) Truncate(
+	size int64,
+	asyncOpUserData any,
+) (operations []*AsyncOperation, err error) {
 	if len(fm.writingFiles) == 0 {
 		return nil, ErrNoFilesToWrite
 	}
@@ -476,6 +490,7 @@ func (fm *FileMirror) Truncate(size int64) (operations []*AsyncOperation, err er
 			asyncOp._type = AOT_TRUNCATE
 			asyncOp.file = file
 			asyncOp.size = size
+			asyncOp.userData = asyncOpUserData
 
 			operations = append(operations, &asyncOp)
 
@@ -495,7 +510,10 @@ func (fm *FileMirror) Truncate(size int64) (operations []*AsyncOperation, err er
 	return operations, err
 }
 
-func (fm *FileMirror) Write(b []byte) (operations []*AsyncOperation, n int, err error) {
+func (fm *FileMirror) Write(
+	b []byte,
+	asyncOpUserData any,
+) (operations []*AsyncOperation, n int, err error) {
 	if len(fm.writingFiles) == 0 {
 		return nil, 0, ErrNoFilesToWrite
 	}
@@ -507,6 +525,7 @@ func (fm *FileMirror) Write(b []byte) (operations []*AsyncOperation, n int, err 
 			asyncOp._type = AOT_WRITE
 			asyncOp.file = file
 			asyncOp.buffer = make([]byte, len(b))
+			asyncOp.userData = asyncOpUserData
 
 			copy(asyncOp.buffer, b)
 
@@ -533,6 +552,7 @@ func (fm *FileMirror) Write(b []byte) (operations []*AsyncOperation, n int, err 
 func (fm *FileMirror) WriteAt(
 	b []byte,
 	off int64,
+	asyncOpUserData any,
 ) (operations []*AsyncOperation, n int, err error) {
 	if len(fm.writingFiles) == 0 {
 		return nil, 0, ErrNoFilesToWrite
@@ -546,6 +566,7 @@ func (fm *FileMirror) WriteAt(
 			asyncOp.file = file
 			asyncOp.buffer = make([]byte, len(b))
 			asyncOp.offset = off
+			asyncOp.userData = asyncOpUserData
 
 			copy(asyncOp.buffer, b)
 
@@ -572,6 +593,7 @@ func (fm *FileMirror) WriteAt(
 
 func (fm *FileMirror) WriteString(
 	s string,
+	asyncOpUserData any,
 ) (operations []*AsyncOperation, n int, err error) {
 	if len(fm.writingFiles) == 0 {
 		return nil, 0, ErrNoFilesToWrite
@@ -584,6 +606,7 @@ func (fm *FileMirror) WriteString(
 			asyncOp._type = AOT_WRITE_STRING
 			asyncOp.file = file
 			asyncOp.stringBuffer = s
+			asyncOp.userData = asyncOpUserData
 
 			operations = append(operations, &asyncOp)
 

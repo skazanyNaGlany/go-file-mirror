@@ -35,21 +35,21 @@ func TestWriteString(t *testing.T) {
 	str := "123abc"
 	readed := make([]byte, len(str))
 
-	ops, n, err := fm.WriteString(str)
+	ops, n, err := fm.WriteString(str, nil)
 	assert.Nil(t, err)
 	assert.Equal(t, len(str), n)
 	assert.Empty(t, ops)
 
-	ops, err = fm.Sync()
+	ops, err = fm.Sync(nil)
 	assert.Nil(t, err)
 	assert.Empty(t, ops)
 
-	ops, ret, err := fm.Seek(0, io.SeekStart)
+	ops, ret, err := fm.Seek(0, io.SeekStart, nil)
 	assert.Nil(t, err)
 	assert.Zero(t, ret)
 	assert.Empty(t, ops)
 
-	ops, n, err = fm.Read(readed)
+	ops, n, err = fm.Read(readed, nil)
 	assert.Nil(t, err)
 	assert.Equal(t, len(str), n)
 	assert.Empty(t, ops)
@@ -58,26 +58,26 @@ func TestWriteString(t *testing.T) {
 	str2 := "defghi"
 	readed = make([]byte, len(str2))
 
-	ops, ret, err = fm.Seek(2, io.SeekStart)
+	ops, ret, err = fm.Seek(2, io.SeekStart, nil)
 	assert.Nil(t, err)
 	assert.Equal(t, int64(2), ret)
 	assert.Empty(t, ops)
 
-	ops, n, err = fm.WriteString(str2)
+	ops, n, err = fm.WriteString(str2, nil)
 	assert.Nil(t, err)
 	assert.Equal(t, len(str), n)
 	assert.Empty(t, ops)
 
-	ops, err = fm.Sync()
+	ops, err = fm.Sync(nil)
 	assert.Nil(t, err)
 	assert.Empty(t, ops)
 
-	ops, ret, err = fm.Seek(2, io.SeekStart)
+	ops, ret, err = fm.Seek(2, io.SeekStart, nil)
 	assert.Nil(t, err)
 	assert.Equal(t, int64(2), ret)
 	assert.Empty(t, ops)
 
-	ops, n, err = fm.Read(readed)
+	ops, n, err = fm.Read(readed, nil)
 	assert.Nil(t, err)
 	assert.Equal(t, len(str2), n)
 	assert.Equal(t, string(readed), str2)

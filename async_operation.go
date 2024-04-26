@@ -17,6 +17,15 @@ type AsyncOperation struct {
 	stringBuffer string
 	started      bool
 	done         bool
+	userData     any
+}
+
+func (ao *AsyncOperation) GetUserData() any {
+	return ao.userData
+}
+
+func (ao *AsyncOperation) SetUserData(userData any) {
+	ao.userData = userData
 }
 
 func (ao *AsyncOperation) GetFile() *os.File {

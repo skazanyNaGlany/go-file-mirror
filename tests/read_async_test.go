@@ -127,7 +127,7 @@ func TestReadAsync(t *testing.T) {
 	readed := make([]byte, 6)
 
 	// 0-1 case
-	ops, n, err := fm.Read(readed)
+	ops, n, err := fm.Read(readed, nil)
 	assert.Nil(t, err)
 	assert.Zero(t, n)
 	assert.Len(t, ops, 1)
@@ -147,7 +147,7 @@ func TestReadAsync(t *testing.T) {
 
 	// set file position to 0
 	// 2-3 case
-	ops, n2, err := fm.Seek(0, io.SeekStart)
+	ops, n2, err := fm.Seek(0, io.SeekStart, nil)
 
 	assert.Zero(t, n2)
 	assert.Nil(t, err)
@@ -164,7 +164,7 @@ func TestReadAsync(t *testing.T) {
 	strb := []byte("123abc")
 
 	// 4-5 case
-	ops2, n, err := fm.Write(strb)
+	ops2, n, err := fm.Write(strb, nil)
 	assert.Nil(t, err)
 	assert.Equal(t, len(strb), n)
 	assert.Len(t, ops2, 1)
@@ -178,7 +178,7 @@ func TestReadAsync(t *testing.T) {
 
 	// set file position to 0
 	// 6-7 case
-	ops, n2, err = fm.Seek(0, io.SeekStart)
+	ops, n2, err = fm.Seek(0, io.SeekStart, nil)
 
 	assert.Zero(t, n2)
 	assert.Nil(t, err)
@@ -193,7 +193,7 @@ func TestReadAsync(t *testing.T) {
 
 	// read again, this time with data in the file
 	// case 8-9
-	ops, n, err = fm.Read(readed)
+	ops, n, err = fm.Read(readed, nil)
 	assert.Nil(t, err)
 	assert.Zero(t, n)
 	assert.Len(t, ops, 1)
@@ -211,7 +211,7 @@ func TestReadAsync(t *testing.T) {
 
 	// read using ReadAt
 	// case 10-11
-	ops, n, err = fm.ReadAt(readed, 2)
+	ops, n, err = fm.ReadAt(readed, 2, nil)
 	assert.Nil(t, err)
 	assert.Zero(t, n)
 	assert.Len(t, ops, 1)
