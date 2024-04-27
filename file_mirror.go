@@ -4,6 +4,7 @@ import (
 	"os"
 	"slices"
 	"sync"
+	"time"
 )
 
 // implements IFileMirror
@@ -640,6 +641,25 @@ func (fm *FileMirror) GetAllFiles() []*os.File {
 	}
 
 	return files
+}
+
+func (fm *FileMirror) WaitForNoOperations(duration time.Duration) {
+	currentDuration := time.Duration(0)
+
+	for {
+		if len(fm.operations) == 0 {
+			break
+		}
+
+		sleepDuration := 10 * time.Millisecond
+
+		time.Sleep(sleepDuration)
+		currentDuration += sleepDuration
+
+		if currentDuration >= duration {
+			break
+		}
+	}
 }
 
 func NewFileMirror(queueSize int) *FileMirror {
