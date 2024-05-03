@@ -23,7 +23,7 @@ func TestSimple(t *testing.T) {
 		panic(err)
 	}
 
-	fm.SetReadingFile(f)
+	assert.True(t, fm.AddReadingFile(f))
 	assert.True(t, fm.AddWritingFile(f))
 	assert.True(t, fm.AddWritingFile(f2))
 
@@ -31,7 +31,7 @@ func TestSimple(t *testing.T) {
 	assert.Contains(t, fm.GetAllFiles(), f)
 	assert.Contains(t, fm.GetAllFiles(), f2)
 
-	assert.Equal(t, fm.GetReadingFile(), f)
+	assert.Contains(t, fm.GetReadingFiles(), f)
 	assert.Contains(t, fm.GetWritingFiles(), f)
 	assert.Contains(t, fm.GetWritingFiles(), f2)
 
@@ -50,20 +50,19 @@ func TestSimple(t *testing.T) {
 	assert.NotNil(t, fm.GetFileMutex(f))
 	assert.NotNil(t, fm.GetFileMutex(f2))
 
-	fm.SetReadingFile(nil)
+	assert.True(t, fm.RemoveReadingFile(f))
 	assert.True(t, fm.RemoveWritingFile(f))
 	assert.True(t, fm.RemoveWritingFile(f2))
 	fm.SetFileAsync(f, false)
 	fm.SetFileAsync(f2, false)
 
-	assert.Nil(t, fm.GetReadingFile())
-	assert.NotEqual(t, fm.GetReadingFile(), f)
+	assert.NotContains(t, fm.GetReadingFiles(), f)
 	assert.NotContains(t, fm.GetWritingFiles(), f)
 	assert.NotContains(t, fm.GetWritingFiles(), f2)
 	assert.False(t, fm.IsFileAsync(f))
 	assert.False(t, fm.IsFileAsync(f2))
 
-	fm.SetReadingFile(f)
+	assert.True(t, fm.AddReadingFile(f))
 	assert.True(t, fm.AddWritingFile(f))
 	assert.True(t, fm.AddWritingFile(f2))
 
@@ -73,7 +72,7 @@ func TestSimple(t *testing.T) {
 	// all files needs to be addes to the FileMirror instance
 	// to close it automatically when closing that FileMirror
 	// instance
-	fm.SetReadingFile(f)
+	assert.True(t, fm.AddReadingFile(f))
 	assert.True(t, fm.AddWritingFile(f))
 	assert.True(t, fm.AddWritingFile(f2))
 }

@@ -7,16 +7,24 @@ import (
 	"time"
 )
 
-// implements IFileMirror
-// driver for IFile
 type FileMirror struct {
-	readingFile            *os.File
-	writingFiles           []*os.File
-	fileMutexes            map[*os.File]*sync.Mutex
-	asyncFiles             map[*os.File]bool
-	running                bool
-	operations             chan *AsyncOperation
-	asyncOperationCallback AsyncOperationCallback
+	readingFiles      []*os.File
+	writingFiles      []*os.File
+	fileMutexes       map[*os.File]*sync.Mutex
+	asyncFiles        map[*os.File]bool
+	fileUserData      map[*os.File]any
+	running           bool
+	asyncOperations   chan *Operation
+	operationCallback OperationCallback
+	fixedBuffer       bool
+}
+
+func (fm *FileMirror) SetFixedBuffer(fixedBuffer bool) {
+	fm.fixedBuffer = fixedBuffer
+}
+
+func (fm *FileMirror) IsFixedBuffer() bool {
+	return fm.fixedBuffer
 }
 
 func (fm *FileMirror) SetFileMutex(file *os.File, mutex *sync.Mutex) {
@@ -35,6 +43,14 @@ func (fm *FileMirror) SetFileAsync(file *os.File, async bool) {
 	}
 }
 
+func (fm *FileMirror) SetFileUserData(file *os.File, userData any) {
+	if userData != nil {
+		fm.fileUserData[file] = userData
+	} else {
+		delete(fm.fileUserData, file)
+	}
+}
+
 func (fm *FileMirror) GetFileMutex(file *os.File) *sync.Mutex {
 	return fm.fileMutexes[file]
 }
@@ -43,12 +59,8 @@ func (fm *FileMirror) IsFileAsync(file *os.File) bool {
 	return fm.asyncFiles[file]
 }
 
-func (fm *FileMirror) SetReadingFile(file *os.File) {
-	fm.readingFile = file
-}
-
-func (fm *FileMirror) GetReadingFile() *os.File {
-	return fm.readingFile
+func (fm *FileMirror) GetFileUserData(file *os.File) any {
+	return fm.fileUserData[file]
 }
 
 func (fm *FileMirror) AddWritingFile(file *os.File) bool {
@@ -77,20 +89,46 @@ func (fm *FileMirror) GetWritingFiles() []*os.File {
 	return fm.writingFiles
 }
 
-func (fm *FileMirror) SetAsyncOperationCallback(callback AsyncOperationCallback) {
-	fm.asyncOperationCallback = callback
+func (fm *FileMirror) AddReadingFile(file *os.File) bool {
+	if slices.Contains(fm.readingFiles, file) {
+		return false
+	}
+
+	fm.readingFiles = append(fm.readingFiles, file)
+
+	return true
 }
 
-func (fm *FileMirror) GetAsyncOperationCallback() AsyncOperationCallback {
-	return fm.asyncOperationCallback
+func (fm *FileMirror) RemoveReadingFile(file *os.File) bool {
+	i := slices.Index(fm.readingFiles, file)
+
+	if i == -1 {
+		return false
+	}
+
+	fm.readingFiles = slices.Delete(fm.readingFiles, i, i+1)
+
+	return true
+}
+
+func (fm *FileMirror) GetReadingFiles() []*os.File {
+	return fm.readingFiles
+}
+
+func (fm *FileMirror) SetOperationCallback(callback OperationCallback) {
+	fm.operationCallback = callback
+}
+
+func (fm *FileMirror) GetOperationCallback() OperationCallback {
+	return fm.operationCallback
 }
 
 func (fm *FileMirror) run() {
 	fm.running = true
 
-	for asyncOp := range fm.operations {
-		if asyncOp._type != AOT_NONE {
-			fm.execute(asyncOp)
+	for asyncOperation := range fm.asyncOperations {
+		if asyncOperation._type != OT_NONE {
+			fm.execute(asyncOperation)
 		}
 
 		if !fm.running {
@@ -99,9 +137,9 @@ func (fm *FileMirror) run() {
 	}
 }
 
-func (fm *FileMirror) execute(operation *AsyncOperation) {
+func (fm *FileMirror) execute(operation *Operation) {
 	switch operation._type {
-	case AOT_READ:
+	case OT_READ_AT:
 		if mutex := fm.fileMutexes[operation.file]; mutex != nil {
 			mutex.Lock()
 			defer mutex.Unlock()
@@ -109,31 +147,8 @@ func (fm *FileMirror) execute(operation *AsyncOperation) {
 
 		operation.started = true
 
-		if fm.asyncOperationCallback != nil {
-			if !fm.asyncOperationCallback(operation) {
-				return
-			}
-		}
-
-		n, err := operation.file.Read(operation.buffer)
-
-		operation.resultInt = int64(n)
-		operation.err = err
-		operation.done = true
-
-		if fm.asyncOperationCallback != nil {
-			fm.asyncOperationCallback(operation)
-		}
-	case AOT_READ_AT:
-		if mutex := fm.fileMutexes[operation.file]; mutex != nil {
-			mutex.Lock()
-			defer mutex.Unlock()
-		}
-
-		operation.started = true
-
-		if !fm.asyncOperationCallback(operation) {
-			return
+		if fm.operationCallback != nil {
+			fm.operationCallback(operation)
 		}
 
 		n, err := operation.file.ReadAt(operation.buffer, operation.offset)
@@ -142,10 +157,10 @@ func (fm *FileMirror) execute(operation *AsyncOperation) {
 		operation.err = err
 		operation.done = true
 
-		if fm.asyncOperationCallback != nil {
-			fm.asyncOperationCallback(operation)
+		if fm.operationCallback != nil {
+			fm.operationCallback(operation)
 		}
-	case AOT_WRITE:
+	case OT_WRITE_AT:
 		if mutex := fm.fileMutexes[operation.file]; mutex != nil {
 			mutex.Lock()
 			defer mutex.Unlock()
@@ -153,29 +168,8 @@ func (fm *FileMirror) execute(operation *AsyncOperation) {
 
 		operation.started = true
 
-		if !fm.asyncOperationCallback(operation) {
-			return
-		}
-
-		n, err := operation.file.Write(operation.buffer)
-
-		operation.resultInt = int64(n)
-		operation.err = err
-		operation.done = true
-
-		if fm.asyncOperationCallback != nil {
-			fm.asyncOperationCallback(operation)
-		}
-	case AOT_WRITE_AT:
-		if mutex := fm.fileMutexes[operation.file]; mutex != nil {
-			mutex.Lock()
-			defer mutex.Unlock()
-		}
-
-		operation.started = true
-
-		if !fm.asyncOperationCallback(operation) {
-			return
+		if fm.operationCallback != nil {
+			fm.operationCallback(operation)
 		}
 
 		n, err := operation.file.WriteAt(operation.buffer, operation.offset)
@@ -184,90 +178,8 @@ func (fm *FileMirror) execute(operation *AsyncOperation) {
 		operation.err = err
 		operation.done = true
 
-		if fm.asyncOperationCallback != nil {
-			fm.asyncOperationCallback(operation)
-		}
-	case AOT_WRITE_STRING:
-		if mutex := fm.fileMutexes[operation.file]; mutex != nil {
-			mutex.Lock()
-			defer mutex.Unlock()
-		}
-
-		operation.started = true
-
-		if !fm.asyncOperationCallback(operation) {
-			return
-		}
-
-		n, err := operation.file.WriteString(operation.stringBuffer)
-
-		operation.resultInt = int64(n)
-		operation.err = err
-		operation.done = true
-
-		if fm.asyncOperationCallback != nil {
-			fm.asyncOperationCallback(operation)
-		}
-	case AOT_TRUNCATE:
-		if mutex := fm.fileMutexes[operation.file]; mutex != nil {
-			mutex.Lock()
-			defer mutex.Unlock()
-		}
-
-		operation.started = true
-
-		if !fm.asyncOperationCallback(operation) {
-			return
-		}
-
-		err := operation.file.Truncate(operation.size)
-
-		operation.err = err
-		operation.done = true
-
-		if fm.asyncOperationCallback != nil {
-			fm.asyncOperationCallback(operation)
-		}
-	case AOT_SEEK:
-		if mutex := fm.fileMutexes[operation.file]; mutex != nil {
-			mutex.Lock()
-			defer mutex.Unlock()
-		}
-
-		operation.started = true
-
-		if !fm.asyncOperationCallback(operation) {
-			return
-		}
-
-		ret, err := operation.file.Seek(operation.offset, operation.whence)
-
-		operation.err = err
-		operation.resultInt = ret
-		operation.done = true
-
-		if fm.asyncOperationCallback != nil {
-			fm.asyncOperationCallback(operation)
-		}
-	case AOT_SYNC:
-		if mutex := fm.fileMutexes[operation.file]; mutex != nil {
-			mutex.Lock()
-			defer mutex.Unlock()
-		}
-
-		operation.started = true
-
-		if !fm.asyncOperationCallback(operation) {
-			return
-		}
-
-		err := operation.file.Sync()
-
-		operation.err = err
-		operation.done = true
-
-		if fm.asyncOperationCallback != nil {
-			fm.asyncOperationCallback(operation)
+		if fm.operationCallback != nil {
+			fm.operationCallback(operation)
 		}
 	}
 }
@@ -275,16 +187,12 @@ func (fm *FileMirror) execute(operation *AsyncOperation) {
 func (fm *FileMirror) Close() error {
 	fm.running = false
 
-	if fm.operations != nil {
-		close(fm.operations)
-		fm.operations = nil
+	if fm.asyncOperations != nil {
+		close(fm.asyncOperations)
+		fm.asyncOperations = nil
 	}
 
 	files := fm.GetAllFiles()
-
-	if len(files) == 0 {
-		return ErrNoFiles
-	}
 
 	for _, f := range files {
 		if mutex := fm.fileMutexes[f]; mutex != nil {
@@ -301,13 +209,7 @@ func (fm *FileMirror) Close() error {
 }
 
 func (fm *FileMirror) RemoveAllFiles() error {
-	files := fm.GetAllFiles()
-
-	if len(files) == 0 {
-		return ErrNoFiles
-	}
-
-	fm.readingFile = nil
+	fm.readingFiles = make([]*os.File, 0)
 	fm.writingFiles = make([]*os.File, 0)
 	fm.asyncFiles = make(map[*os.File]bool)
 	fm.fileMutexes = make(map[*os.File]*sync.Mutex)
@@ -315,339 +217,111 @@ func (fm *FileMirror) RemoveAllFiles() error {
 	return nil
 }
 
-func (fm *FileMirror) Read(
-	b []byte,
-	asyncOpUserData any,
-) (operations []*AsyncOperation, n int, err error) {
-	if fm.readingFile == nil {
-		return nil, 0, ErrNoFileToRead
-	}
-
-	file := fm.readingFile
-
-	if fm.asyncFiles[file] {
-		asyncOp := AsyncOperation{}
-
-		asyncOp._type = AOT_READ
-		asyncOp.file = file
-		asyncOp.buffer = make([]byte, len(b))
-		asyncOp.userData = asyncOpUserData
-
-		operations = append(operations, &asyncOp)
-
-		fm.operations <- &asyncOp
-
-		return operations, 0, nil
-	} else {
-		if mutex := fm.fileMutexes[file]; mutex != nil {
-			mutex.Lock()
-			defer mutex.Unlock()
-		}
-
-		n, err = file.Read(b)
-
-		return nil, n, err
-	}
-}
-
 func (fm *FileMirror) ReadAt(
 	b []byte,
 	off int64,
-	asyncOpUserData any,
-) (operations []*AsyncOperation, n int, err error) {
-	if fm.readingFile == nil {
-		return nil, 0, ErrNoFileToRead
+	operationUserData any,
+) (operationList *OperationList) {
+	if len(fm.readingFiles) == 0 {
+		return nil
 	}
 
-	file := fm.readingFile
+	operationList = &OperationList{}
 
-	if fm.asyncFiles[file] {
-		asyncOp := AsyncOperation{}
+	for _, file := range fm.readingFiles {
+		operation := Operation{}
 
-		asyncOp._type = AOT_READ_AT
-		asyncOp.file = file
-		asyncOp.buffer = make([]byte, len(b))
-		asyncOp.offset = off
-		asyncOp.userData = asyncOpUserData
+		operation._type = OT_READ_AT
+		operation.file = file
+		operation.offset = off
+		operation.operationUserData = operationUserData
+		operation.fileUserData = fm.fileUserData[file]
 
-		operations = append(operations, &asyncOp)
-
-		fm.operations <- &asyncOp
-
-		return operations, 0, nil
-	} else {
-		if mutex := fm.fileMutexes[file]; mutex != nil {
-			mutex.Lock()
-			defer mutex.Unlock()
-		}
-
-		n, err = file.ReadAt(b, off)
-
-		return nil, n, err
-	}
-}
-
-func (fm *FileMirror) Seek(
-	offset int64,
-	whence int,
-	asyncOpUserData any,
-) (operations []*AsyncOperation, ret int64, err error) {
-	files := fm.GetAllFiles()
-
-	if len(files) == 0 {
-		return nil, 0, ErrNoFiles
-	}
-
-	for _, file := range files {
-		if fm.asyncFiles[file] {
-			asyncOp := AsyncOperation{}
-
-			asyncOp._type = AOT_SEEK
-			asyncOp.file = file
-			asyncOp.offset = offset
-			asyncOp.whence = whence
-			asyncOp.userData = asyncOpUserData
-
-			operations = append(operations, &asyncOp)
-
-			fm.operations <- &asyncOp
+		if !fm.fixedBuffer {
+			operation.buffer = make([]byte, len(b))
+			copy(operation.buffer, b)
 		} else {
-			if mutex := fm.fileMutexes[file]; mutex != nil {
-				mutex.Lock()
-				defer mutex.Unlock()
-			}
-
-			ret, err = file.Seek(offset, whence)
-
-			if err != nil {
-				return operations, ret, err
-			}
+			operation.buffer = b
 		}
-	}
 
-	return operations, ret, err
-}
+		*operationList = append(*operationList, &operation)
 
-func (fm *FileMirror) Stat() (os.FileInfo, error) {
-	if fm.readingFile == nil {
-		return nil, ErrNoFileToRead
-	}
-
-	if mutex := fm.fileMutexes[fm.readingFile]; mutex != nil {
-		mutex.Lock()
-		defer mutex.Unlock()
-	}
-
-	return fm.readingFile.Stat()
-}
-
-func (fm *FileMirror) Sync(
-	asyncOpUserData any,
-) (operations []*AsyncOperation, err error) {
-	files := fm.GetAllFiles()
-
-	if len(files) == 0 {
-		return nil, ErrNoFiles
-	}
-
-	for _, file := range files {
 		if fm.asyncFiles[file] {
-			asyncOp := AsyncOperation{}
+			operation.async = true
 
-			asyncOp._type = AOT_SYNC
-			asyncOp.file = file
-			asyncOp.userData = asyncOpUserData
-
-			operations = append(operations, &asyncOp)
-
-			fm.operations <- &asyncOp
+			fm.asyncOperations <- &operation
 		} else {
-			if mutex := fm.fileMutexes[file]; mutex != nil {
-				mutex.Lock()
-				defer mutex.Unlock()
-			}
-
-			if err := file.Sync(); err != nil {
-				return operations, err
-			}
+			fm.execute(&operation)
 		}
 	}
 
-	return operations, nil
-}
-
-func (fm *FileMirror) Truncate(
-	size int64,
-	asyncOpUserData any,
-) (operations []*AsyncOperation, err error) {
-	if len(fm.writingFiles) == 0 {
-		return nil, ErrNoFilesToWrite
-	}
-
-	for _, file := range fm.writingFiles {
-		if fm.asyncFiles[file] {
-			asyncOp := AsyncOperation{}
-
-			asyncOp._type = AOT_TRUNCATE
-			asyncOp.file = file
-			asyncOp.size = size
-			asyncOp.userData = asyncOpUserData
-
-			operations = append(operations, &asyncOp)
-
-			fm.operations <- &asyncOp
-		} else {
-			if mutex := fm.fileMutexes[file]; mutex != nil {
-				mutex.Lock()
-				defer mutex.Unlock()
-			}
-
-			if err := file.Truncate(size); err != nil {
-				return operations, err
-			}
-		}
-	}
-
-	return operations, err
-}
-
-func (fm *FileMirror) Write(
-	b []byte,
-	asyncOpUserData any,
-) (operations []*AsyncOperation, n int, err error) {
-	if len(fm.writingFiles) == 0 {
-		return nil, 0, ErrNoFilesToWrite
-	}
-
-	for _, file := range fm.writingFiles {
-		if fm.asyncFiles[file] {
-			asyncOp := AsyncOperation{}
-
-			asyncOp._type = AOT_WRITE
-			asyncOp.file = file
-			asyncOp.buffer = make([]byte, len(b))
-			asyncOp.userData = asyncOpUserData
-
-			copy(asyncOp.buffer, b)
-
-			operations = append(operations, &asyncOp)
-
-			fm.operations <- &asyncOp
-		} else {
-			if mutex := fm.fileMutexes[file]; mutex != nil {
-				mutex.Lock()
-				defer mutex.Unlock()
-			}
-
-			n, err = file.Write(b)
-
-			if err != nil {
-				return operations, n, err
-			}
-		}
-	}
-
-	return operations, n, nil
+	return operationList
 }
 
 func (fm *FileMirror) WriteAt(
 	b []byte,
 	off int64,
-	asyncOpUserData any,
-) (operations []*AsyncOperation, n int, err error) {
+	operationUserData any,
+) (operationList *OperationList) {
 	if len(fm.writingFiles) == 0 {
-		return nil, 0, ErrNoFilesToWrite
+		return nil
 	}
 
+	operationList = &OperationList{}
+
 	for _, file := range fm.writingFiles {
-		if fm.asyncFiles[file] {
-			asyncOp := AsyncOperation{}
+		operation := Operation{}
 
-			asyncOp._type = AOT_WRITE_AT
-			asyncOp.file = file
-			asyncOp.buffer = make([]byte, len(b))
-			asyncOp.offset = off
-			asyncOp.userData = asyncOpUserData
+		operation._type = OT_WRITE_AT
+		operation.file = file
+		operation.offset = off
+		operation.operationUserData = operationUserData
+		operation.fileUserData = fm.fileUserData[file]
 
-			copy(asyncOp.buffer, b)
-
-			operations = append(operations, &asyncOp)
-
-			fm.operations <- &asyncOp
+		if !fm.fixedBuffer {
+			operation.buffer = make([]byte, len(b))
+			copy(operation.buffer, b)
 		} else {
-			if mutex := fm.fileMutexes[file]; mutex != nil {
-				mutex.Lock()
-				defer mutex.Unlock()
-			}
-
-			n, err = file.WriteAt(b, off)
-
-			if err != nil {
-				return operations, n, err
-			}
+			operation.buffer = b
 		}
 
-	}
+		*operationList = append(*operationList, &operation)
 
-	return operations, n, nil
-}
-
-func (fm *FileMirror) WriteString(
-	s string,
-	asyncOpUserData any,
-) (operations []*AsyncOperation, n int, err error) {
-	if len(fm.writingFiles) == 0 {
-		return nil, 0, ErrNoFilesToWrite
-	}
-
-	for _, file := range fm.writingFiles {
 		if fm.asyncFiles[file] {
-			asyncOp := AsyncOperation{}
+			operation.async = true
 
-			asyncOp._type = AOT_WRITE_STRING
-			asyncOp.file = file
-			asyncOp.stringBuffer = s
-			asyncOp.userData = asyncOpUserData
-
-			operations = append(operations, &asyncOp)
-
-			fm.operations <- &asyncOp
+			fm.asyncOperations <- &operation
 		} else {
-			if mutex := fm.fileMutexes[file]; mutex != nil {
-				mutex.Lock()
-				defer mutex.Unlock()
-			}
-
-			n, err = file.WriteString(s)
-
-			if err != nil {
-				return operations, n, err
-			}
+			fm.execute(&operation)
 		}
 	}
 
-	return operations, n, nil
+	return operationList
 }
 
 func (fm *FileMirror) GetAllFiles() []*os.File {
-	files := slices.Clone(fm.writingFiles)
+	files := make([]*os.File, 0)
 
-	if fm.readingFile == nil {
-		return files
+	for _, ifile := range fm.readingFiles {
+		if !slices.Contains(files, ifile) {
+			files = append(files, ifile)
+		}
 	}
 
-	if !slices.Contains(files, fm.readingFile) {
-		files = append(files, fm.readingFile)
+	for _, ifile := range fm.writingFiles {
+		if !slices.Contains(files, ifile) {
+			files = append(files, ifile)
+		}
 	}
 
 	return files
 }
 
-func (fm *FileMirror) WaitForNoOperations(duration time.Duration) {
+func (fm *FileMirror) WaitForNoAsyncOperations(duration time.Duration) {
 	currentDuration := time.Duration(0)
 
 	for {
-		if len(fm.operations) == 0 {
+		if len(fm.asyncOperations) == 0 {
 			break
 		}
 
@@ -664,9 +338,10 @@ func (fm *FileMirror) WaitForNoOperations(duration time.Duration) {
 
 func NewFileMirror(queueSize int) *FileMirror {
 	fm := FileMirror{}
-	fm.operations = make(chan *AsyncOperation, queueSize)
+	fm.asyncOperations = make(chan *Operation, queueSize)
 	fm.fileMutexes = make(map[*os.File]*sync.Mutex)
 	fm.asyncFiles = make(map[*os.File]bool)
+	fm.fileUserData = make(map[*os.File]any)
 
 	go fm.run()
 
