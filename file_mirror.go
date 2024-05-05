@@ -221,14 +221,15 @@ func (fm *FileMirror) ReadAt(
 	b []byte,
 	off int64,
 	operationUserData any,
+	useFiles ...*os.File,
 ) (operationList *OperationList) {
-	if len(fm.readingFiles) == 0 {
-		return nil
-	}
-
 	operationList = &OperationList{}
 
-	for _, file := range fm.readingFiles {
+	if len(useFiles) == 0 {
+		useFiles = fm.readingFiles
+	}
+
+	for _, file := range useFiles {
 		operation := Operation{}
 
 		operation._type = OT_READ_AT
@@ -262,14 +263,15 @@ func (fm *FileMirror) WriteAt(
 	b []byte,
 	off int64,
 	operationUserData any,
+	useFiles ...*os.File,
 ) (operationList *OperationList) {
-	if len(fm.writingFiles) == 0 {
-		return nil
-	}
-
 	operationList = &OperationList{}
 
-	for _, file := range fm.writingFiles {
+	if len(useFiles) == 0 {
+		useFiles = fm.writingFiles
+	}
+
+	for _, file := range useFiles {
 		operation := Operation{}
 
 		operation._type = OT_WRITE_AT
