@@ -18,6 +18,7 @@ type FileMirror struct {
 	operationCallback     OperationCallback
 	fixedBuffer           bool
 	fileCachedMemoryBytes map[*os.File][]bool
+	idleCallback          IdleCallback
 }
 
 func (fm *FileMirror) GetFileCachedMemoryBytes(file *os.File) []bool {
@@ -152,17 +153,30 @@ func (fm *FileMirror) GetOperationCallback() OperationCallback {
 	return fm.operationCallback
 }
 
+func (fm *FileMirror) SetIdleCallback(callback IdleCallback) {
+	fm.idleCallback = callback
+}
+
+func (fm *FileMirror) GetIdleCallback() IdleCallback {
+	return fm.idleCallback
+}
+
 func (fm *FileMirror) run() {
 	fm.running = true
 
-	for asyncOperation := range fm.asyncOperations {
-		if asyncOperation._type != OT_NONE {
-			fm.execute(asyncOperation)
+	for fm.running {
+		select {
+		case asyncOperation := <-fm.asyncOperations:
+			if asyncOperation._type != OT_NONE {
+				fm.execute(asyncOperation)
+			}
+		default:
+			if fm.idleCallback != nil {
+				fm.idleCallback(fm)
+			}
 		}
 
-		if !fm.running {
-			break
-		}
+		time.Sleep(10 * time.Millisecond)
 	}
 }
 

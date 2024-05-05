@@ -26,11 +26,13 @@ func TestNormal(t *testing.T) {
 		panic(err)
 	}
 
-	callbackCalledCount := 0
+	operationCallbackCount := 0
+	idleCallbackCount := 0
+
 	buffer := make([]byte, 10)
 
 	fm.SetOperationCallback(func(operation *gofilemirror.Operation) {
-		switch callbackCalledCount {
+		switch operationCallbackCount {
 		case 0:
 			// started reading from 0 position
 			// no data available since the file is empty
@@ -151,7 +153,11 @@ func TestNormal(t *testing.T) {
 		operation.WaitForStart(0 * time.Second)
 		operation.WaitForDone(0 * time.Second)
 
-		callbackCalledCount++
+		operationCallbackCount++
+	})
+
+	fm.SetIdleCallback(func(fileMirror *gofilemirror.FileMirror) {
+		idleCallbackCount++
 	})
 
 	assert.True(t, fm.AddReadingFile(f))
@@ -186,7 +192,7 @@ func TestNormal(t *testing.T) {
 	// two files)
 	operations := fm.ReadAt(buffer, 0, "some_user_data_here")
 
-	assert.Equal(t, 2, callbackCalledCount)
+	assert.Equal(t, 2, operationCallbackCount)
 	assert.NotNil(t, operations.GetNonAsyncOperations())
 	assert.NotNil(t, operations.GetAsyncOperations())
 	assert.Len(t, *operations.GetNonAsyncOperations(), 1)
@@ -208,7 +214,7 @@ func TestNormal(t *testing.T) {
 	rand.Read(buffer)
 
 	operations = fm.WriteAt(buffer, 0, "some_user_data_here")
-	assert.Equal(t, 6, callbackCalledCount)
+	assert.Equal(t, 6, operationCallbackCount)
 	assert.NotNil(t, operations.GetNonAsyncOperations())
 	assert.NotNil(t, operations.GetAsyncOperations())
 	assert.Len(t, *operations.GetNonAsyncOperations(), 2)
@@ -224,7 +230,7 @@ func TestNormal(t *testing.T) {
 	// read written data
 	operations = fm.ReadAt(buffer, 0, "some_user_data_here")
 
-	assert.Equal(t, 8, callbackCalledCount)
+	assert.Equal(t, 8, operationCallbackCount)
 	assert.NotNil(t, operations.GetNonAsyncOperations())
 	assert.NotNil(t, operations.GetAsyncOperations())
 	assert.Len(t, *operations.GetNonAsyncOperations(), 1)
@@ -241,4 +247,6 @@ func TestNormal(t *testing.T) {
 
 	assert.True(t, fm.IsFileFullyCached(f))
 	assert.False(t, fm.IsFileFullyCached(f2))
+
+	assert.Greater(t, idleCallbackCount, 3)
 }
