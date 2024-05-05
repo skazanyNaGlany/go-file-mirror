@@ -302,6 +302,7 @@ func (fm *FileMirror) ReadAt(
 		operation.offset = off
 		operation.operationUserData = operationUserData
 		operation.fileUserData = fm.fileUserData[file]
+		operation.fileMirror = fm
 
 		if !fm.fixedBuffer {
 			operation.buffer = make([]byte, len(b))
@@ -344,6 +345,7 @@ func (fm *FileMirror) WriteAt(
 		operation.offset = off
 		operation.operationUserData = operationUserData
 		operation.fileUserData = fm.fileUserData[file]
+		operation.fileMirror = fm
 
 		if !fm.fixedBuffer {
 			operation.buffer = make([]byte, len(b))

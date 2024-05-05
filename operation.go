@@ -17,10 +17,19 @@ type Operation struct {
 	async             bool
 	operationUserData any
 	fileUserData      any
+	fileMirror        *FileMirror
 	// for Seek, Stat and WriteString
 	// whence            int
 	// size              int64
 	// stringBuffer      string
+}
+
+func (ao *Operation) GetFileMirror() *FileMirror {
+	return ao.fileMirror
+}
+
+func (ao *Operation) SetFileMirror(fileMirror *FileMirror) {
+	ao.fileMirror = fileMirror
 }
 
 func (ao *Operation) GetUserData() any {
