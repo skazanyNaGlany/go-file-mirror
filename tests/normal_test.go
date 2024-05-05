@@ -164,6 +164,20 @@ func TestNormal(t *testing.T) {
 	fm.SetFileUserData(f, "some_user_data_here1")
 	fm.SetFileUserData(f2, "some_user_data_here2")
 
+	fm.SetFileCachedMemoryBytes(
+		f,
+		make([]bool, len(buffer)))
+
+	fm.SetFileCachedMemoryBytes(
+		f2,
+		make([]bool, len(buffer)))
+
+	assert.Len(t, fm.GetFileCachedMemoryBytes(f), 10)
+	assert.Len(t, fm.GetFileCachedMemoryBytes(f2), 10)
+
+	assert.False(t, fm.IsFileFullyCached(f))
+	assert.False(t, fm.IsFileFullyCached(f2))
+
 	// read from only one file "f"
 	// the following operation, as well as all
 	// operations in this test will block untill
@@ -204,6 +218,9 @@ func TestNormal(t *testing.T) {
 	operations.GetNonAsyncOperations().WaitForStart(1 * time.Second)
 	operations.GetNonAsyncOperations().WaitForDone(1 * time.Second)
 
+	assert.False(t, fm.IsFileFullyCached(f))
+	assert.False(t, fm.IsFileFullyCached(f2))
+
 	// read written data
 	operations = fm.ReadAt(buffer, 0, "some_user_data_here")
 
@@ -221,4 +238,7 @@ func TestNormal(t *testing.T) {
 	firstOperation = (*operations.GetNonAsyncOperations())[0]
 	assert.Equal(t, int64(10), firstOperation.GetLastResultInt())
 	assert.Nil(t, firstOperation.GetLastResultError())
+
+	assert.True(t, fm.IsFileFullyCached(f))
+	assert.False(t, fm.IsFileFullyCached(f2))
 }

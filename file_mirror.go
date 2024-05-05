@@ -8,15 +8,44 @@ import (
 )
 
 type FileMirror struct {
-	readingFiles      []*os.File
-	writingFiles      []*os.File
-	fileMutexes       map[*os.File]*sync.Mutex
-	asyncFiles        map[*os.File]bool
-	fileUserData      map[*os.File]any
-	running           bool
-	asyncOperations   chan *Operation
-	operationCallback OperationCallback
-	fixedBuffer       bool
+	readingFiles          []*os.File
+	writingFiles          []*os.File
+	fileMutexes           map[*os.File]*sync.Mutex
+	asyncFiles            map[*os.File]bool
+	fileUserData          map[*os.File]any
+	running               bool
+	asyncOperations       chan *Operation
+	operationCallback     OperationCallback
+	fixedBuffer           bool
+	fileCachedMemoryBytes map[*os.File][]bool
+}
+
+func (fm *FileMirror) GetFileCachedMemoryBytes(file *os.File) []bool {
+	return fm.fileCachedMemoryBytes[file]
+}
+
+func (fm *FileMirror) SetFileCachedMemoryBytes(file *os.File, cachedMemoryBytes []bool) {
+	if cachedMemoryBytes != nil {
+		fm.fileCachedMemoryBytes[file] = cachedMemoryBytes
+	} else {
+		delete(fm.fileCachedMemoryBytes, file)
+	}
+}
+
+func (fm *FileMirror) IsFileFullyCached(file *os.File) bool {
+	if fm.fileCachedMemoryBytes[file] == nil {
+		return false
+	}
+
+	cachedBytes := 0
+
+	for _, b := range fm.fileCachedMemoryBytes[file] {
+		if b {
+			cachedBytes++
+		}
+	}
+
+	return cachedBytes == len(fm.fileCachedMemoryBytes[file])
 }
 
 func (fm *FileMirror) SetFixedBuffer(fixedBuffer bool) {
@@ -137,6 +166,27 @@ func (fm *FileMirror) run() {
 	}
 }
 
+func (fm *FileMirror) fillCachedMemoryBytes(
+	file *os.File,
+	startOffset int64,
+	endOffset int64,
+	b bool,
+) {
+	if fm.fileCachedMemoryBytes[file] == nil {
+		return
+	}
+
+	maxLen := int64(len(fm.fileCachedMemoryBytes[file]))
+
+	for i := startOffset; i < endOffset; i++ {
+		if i < 0 || i > maxLen {
+			return
+		}
+
+		fm.fileCachedMemoryBytes[file][i] = b
+	}
+}
+
 func (fm *FileMirror) execute(operation *Operation) {
 	switch operation._type {
 	case OT_READ_AT:
@@ -156,6 +206,13 @@ func (fm *FileMirror) execute(operation *Operation) {
 		operation.resultInt = int64(n)
 		operation.err = err
 		operation.done = true
+
+		fm.fillCachedMemoryBytes(
+			operation.file,
+			operation.offset,
+			operation.offset+operation.resultInt,
+			true,
+		)
 
 		if fm.operationCallback != nil {
 			fm.operationCallback(operation)
@@ -177,6 +234,13 @@ func (fm *FileMirror) execute(operation *Operation) {
 		operation.resultInt = int64(n)
 		operation.err = err
 		operation.done = true
+
+		fm.fillCachedMemoryBytes(
+			operation.file,
+			operation.offset,
+			operation.offset+operation.resultInt,
+			false,
+		)
 
 		if fm.operationCallback != nil {
 			fm.operationCallback(operation)
@@ -213,6 +277,7 @@ func (fm *FileMirror) RemoveAllFiles() error {
 	fm.writingFiles = make([]*os.File, 0)
 	fm.asyncFiles = make(map[*os.File]bool)
 	fm.fileMutexes = make(map[*os.File]*sync.Mutex)
+	fm.fileCachedMemoryBytes = make(map[*os.File][]bool)
 
 	return nil
 }
@@ -344,6 +409,7 @@ func NewFileMirror(queueSize int) *FileMirror {
 	fm.fileMutexes = make(map[*os.File]*sync.Mutex)
 	fm.asyncFiles = make(map[*os.File]bool)
 	fm.fileUserData = make(map[*os.File]any)
+	fm.fileCachedMemoryBytes = make(map[*os.File][]bool)
 
 	go fm.run()
 
