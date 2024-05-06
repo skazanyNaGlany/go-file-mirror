@@ -18,10 +18,19 @@ type Operation struct {
 	operationUserData any
 	fileUserData      any
 	fileMirror        *FileMirror
+	timeMilisecond    int64
 	// for Seek, Stat and WriteString
 	// whence            int
 	// size              int64
 	// stringBuffer      string
+}
+
+func (ao *Operation) GetTimeMilisecond() int64 {
+	return ao.timeMilisecond
+}
+
+func (ao *Operation) SetTimeMilisecond(timeMilisecond int64) {
+	ao.timeMilisecond = timeMilisecond
 }
 
 func (ao *Operation) GetFileMirror() *FileMirror {

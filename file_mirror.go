@@ -215,7 +215,11 @@ func (fm *FileMirror) execute(operation *Operation) {
 			fm.operationCallback(operation)
 		}
 
+		startTime := time.Now().UnixMilli()
+
 		n, err := operation.file.ReadAt(operation.buffer, operation.offset)
+
+		operation.timeMilisecond = time.Now().UnixMilli() - startTime
 
 		operation.resultInt = int64(n)
 		operation.err = err
@@ -243,7 +247,11 @@ func (fm *FileMirror) execute(operation *Operation) {
 			fm.operationCallback(operation)
 		}
 
+		startTime := time.Now().UnixMilli()
+
 		n, err := operation.file.WriteAt(operation.buffer, operation.offset)
+
+		operation.timeMilisecond = time.Now().UnixMilli() - startTime
 
 		operation.resultInt = int64(n)
 		operation.err = err

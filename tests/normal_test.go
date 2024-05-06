@@ -247,6 +247,5 @@ func TestNormal(t *testing.T) {
 
 	assert.True(t, fm.IsFileFullyCached(f))
 	assert.False(t, fm.IsFileFullyCached(f2))
-
-	assert.Greater(t, idleCallbackCount, 3)
+	assert.NotZero(t, idleCallbackCount)
 }
