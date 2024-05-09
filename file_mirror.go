@@ -10,6 +10,7 @@ import (
 type FileMirror struct {
 	readingFiles          []*os.File
 	writingFiles          []*os.File
+	allFiles              []*os.File
 	fileMutexes           map[*os.File]*sync.Mutex
 	asyncFiles            map[*os.File]bool
 	fileUserData          map[*os.File]any
@@ -100,10 +101,15 @@ func (fm *FileMirror) AddWritingFile(file *os.File) bool {
 
 	fm.writingFiles = append(fm.writingFiles, file)
 
+	if !slices.Contains(fm.allFiles, file) {
+		fm.allFiles = append(fm.allFiles, file)
+	}
+
 	return true
 }
 
 func (fm *FileMirror) RemoveWritingFile(file *os.File) bool {
+	// writingFiles
 	i := slices.Index(fm.writingFiles, file)
 
 	if i == -1 {
@@ -111,6 +117,13 @@ func (fm *FileMirror) RemoveWritingFile(file *os.File) bool {
 	}
 
 	fm.writingFiles = slices.Delete(fm.writingFiles, i, i+1)
+
+	// allFiles
+	i = slices.Index(fm.allFiles, file)
+
+	if i != -1 {
+		fm.allFiles = slices.Delete(fm.allFiles, i, i+1)
+	}
 
 	return true
 }
@@ -126,10 +139,15 @@ func (fm *FileMirror) AddReadingFile(file *os.File) bool {
 
 	fm.readingFiles = append(fm.readingFiles, file)
 
+	if !slices.Contains(fm.allFiles, file) {
+		fm.allFiles = append(fm.allFiles, file)
+	}
+
 	return true
 }
 
 func (fm *FileMirror) RemoveReadingFile(file *os.File) bool {
+	// readingFiles
 	i := slices.Index(fm.readingFiles, file)
 
 	if i == -1 {
@@ -137,6 +155,13 @@ func (fm *FileMirror) RemoveReadingFile(file *os.File) bool {
 	}
 
 	fm.readingFiles = slices.Delete(fm.readingFiles, i, i+1)
+
+	// allFiles
+	i = slices.Index(fm.allFiles, file)
+
+	if i != -1 {
+		fm.allFiles = slices.Delete(fm.allFiles, i, i+1)
+	}
 
 	return true
 }
@@ -300,6 +325,7 @@ func (fm *FileMirror) RemoveAllFiles() error {
 	fm.asyncFiles = make(map[*os.File]bool)
 	fm.fileMutexes = make(map[*os.File]*sync.Mutex)
 	fm.fileCachedMemoryBytes = make(map[*os.File][]bool)
+	fm.allFiles = make([]*os.File, 0)
 
 	return nil
 }
@@ -390,22 +416,32 @@ func (fm *FileMirror) WriteAt(
 	return operationList
 }
 
-func (fm *FileMirror) GetAllFiles() []*os.File {
+func (fm *FileMirror) GetAsyncFiles() []*os.File {
 	files := make([]*os.File, 0)
 
-	for _, ifile := range fm.readingFiles {
-		if !slices.Contains(files, ifile) {
-			files = append(files, ifile)
-		}
-	}
-
-	for _, ifile := range fm.writingFiles {
-		if !slices.Contains(files, ifile) {
-			files = append(files, ifile)
+	for _, file := range fm.allFiles {
+		if fm.asyncFiles[file] {
+			files = append(files, file)
 		}
 	}
 
 	return files
+}
+
+func (fm *FileMirror) GetNonAsyncFiles() []*os.File {
+	files := make([]*os.File, 0)
+
+	for _, file := range fm.allFiles {
+		if !fm.asyncFiles[file] {
+			files = append(files, file)
+		}
+	}
+
+	return files
+}
+
+func (fm *FileMirror) GetAllFiles() []*os.File {
+	return fm.allFiles
 }
 
 func (fm *FileMirror) WaitForNoAsyncOperations(duration time.Duration) {

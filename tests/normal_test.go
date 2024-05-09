@@ -170,6 +170,11 @@ func TestNormal(t *testing.T) {
 	fm.SetFileUserData(f, "some_user_data_here1")
 	fm.SetFileUserData(f2, "some_user_data_here2")
 
+	assert.Contains(t, fm.GetNonAsyncFiles(), f)
+	assert.Contains(t, fm.GetNonAsyncFiles(), f2)
+	assert.NotContains(t, fm.GetAsyncFiles(), f)
+	assert.NotContains(t, fm.GetAsyncFiles(), f2)
+
 	fm.SetFileCachedMemoryBytes(
 		f,
 		make([]bool, len(buffer)))
