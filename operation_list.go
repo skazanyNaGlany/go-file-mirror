@@ -58,6 +58,26 @@ func (ol *OperationList) WaitForDone(duration time.Duration) {
 	}
 }
 
+func (ol *OperationList) GetFirstAsyncOperation() *Operation {
+	for _, operation := range *ol {
+		if operation.async {
+			return operation
+		}
+	}
+
+	return nil
+}
+
+func (ol *OperationList) GetFirstNonAsyncOperation() *Operation {
+	for _, operation := range *ol {
+		if !operation.async {
+			return operation
+		}
+	}
+
+	return nil
+}
+
 func (ol *OperationList) GetAsyncOperations() *OperationList {
 	operationList := OperationList{}
 
