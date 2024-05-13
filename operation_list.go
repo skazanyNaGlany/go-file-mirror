@@ -1,6 +1,8 @@
 package gofilemirror
 
-import "time"
+import (
+	"time"
+)
 
 type OperationList []*Operation
 

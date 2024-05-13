@@ -167,6 +167,9 @@ func TestAsync(t *testing.T) {
 	fm.SetFileAsync(f, true)
 	fm.SetFileAsync(f2, true)
 
+	assert.Equal(t, f, fm.GetFirstAsyncFile())
+	assert.Nil(t, fm.GetFirstNonAsyncFile())
+
 	assert.Contains(t, fm.GetAsyncFiles(), f)
 	assert.Contains(t, fm.GetAsyncFiles(), f2)
 	assert.NotContains(t, fm.GetNonAsyncFiles(), f)

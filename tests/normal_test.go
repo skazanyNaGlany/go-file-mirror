@@ -189,6 +189,9 @@ func TestNormal(t *testing.T) {
 	assert.False(t, fm.IsFileFullyCached(f))
 	assert.False(t, fm.IsFileFullyCached(f2))
 
+	assert.Equal(t, 0, fm.GetFileCachedPercent(f))
+	assert.Equal(t, 0, fm.GetFileCachedPercent(f2))
+
 	// read from only one file "f"
 	// the following operation, as well as all
 	// operations in this test will block untill
@@ -253,4 +256,6 @@ func TestNormal(t *testing.T) {
 	assert.True(t, fm.IsFileFullyCached(f))
 	assert.False(t, fm.IsFileFullyCached(f2))
 	assert.NotZero(t, idleCallbackCount)
+
+	assert.Equal(t, 100, fm.GetFileCachedPercent(f))
 }

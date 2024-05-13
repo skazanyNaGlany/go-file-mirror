@@ -50,6 +50,32 @@ func (fm *FileMirror) IsFileFullyCached(file *os.File) bool {
 	return cachedBytes == len(fm.fileCachedMemoryBytes[file])
 }
 
+func (fm *FileMirror) GetFileCachedPercent(file *os.File) int {
+	if fm.fileCachedMemoryBytes[file] == nil {
+		return 0
+	}
+
+	maxLen := len(fm.fileCachedMemoryBytes[file])
+
+	if maxLen == 0 {
+		return 0
+	}
+
+	cachedBytes := 0
+
+	for _, b := range fm.fileCachedMemoryBytes[file] {
+		if b {
+			cachedBytes++
+		}
+	}
+
+	if cachedBytes == 0 {
+		return 0
+	}
+
+	return cachedBytes * 100 / maxLen
+}
+
 func (fm *FileMirror) SetFixedBuffer(fixedBuffer bool) {
 	fm.fixedBuffer = fixedBuffer
 }
@@ -428,6 +454,14 @@ func (fm *FileMirror) GetAsyncFiles() []*os.File {
 	return files
 }
 
+func (fm *FileMirror) GetFirstAsyncFile() *os.File {
+	for file, _ := range fm.asyncFiles {
+		return file
+	}
+
+	return nil
+}
+
 func (fm *FileMirror) GetNonAsyncFiles() []*os.File {
 	files := make([]*os.File, 0)
 
@@ -438,6 +472,16 @@ func (fm *FileMirror) GetNonAsyncFiles() []*os.File {
 	}
 
 	return files
+}
+
+func (fm *FileMirror) GetFirstNonAsyncFile() *os.File {
+	for _, file := range fm.allFiles {
+		if !fm.asyncFiles[file] {
+			return file
+		}
+	}
+
+	return nil
 }
 
 func (fm *FileMirror) GetAllFiles() []*os.File {
