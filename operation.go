@@ -125,6 +125,14 @@ func (ao *Operation) IsAsync() bool {
 	return ao.async
 }
 
+func (ao *Operation) IsRead() bool {
+	return ao._type == OT_READ_AT
+}
+
+func (ao *Operation) IsWrite() bool {
+	return ao._type == OT_WRITE_AT
+}
+
 func (ao *Operation) SetDone(started bool) {
 	ao.started = started
 }

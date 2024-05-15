@@ -217,6 +217,7 @@ func TestNormal(t *testing.T) {
 	firstOperation := (*operations.GetNonAsyncOperations())[0]
 	assert.Zero(t, firstOperation.GetLastResultInt())
 	assert.ErrorAs(t, firstOperation.GetLastResultError(), &io.EOF)
+	assert.True(t, firstOperation.IsRead())
 
 	// fill the buffer with some random data
 	rand.Read(buffer)
@@ -231,6 +232,9 @@ func TestNormal(t *testing.T) {
 
 	operations.GetNonAsyncOperations().WaitForStart(1 * time.Second)
 	operations.GetNonAsyncOperations().WaitForDone(1 * time.Second)
+
+	firstOperation = (*operations.GetNonAsyncOperations())[0]
+	assert.True(t, firstOperation.IsWrite())
 
 	assert.False(t, fm.IsFileFullyCached(f))
 	assert.False(t, fm.IsFileFullyCached(f2))
@@ -252,6 +256,7 @@ func TestNormal(t *testing.T) {
 	firstOperation = (*operations.GetNonAsyncOperations())[0]
 	assert.Equal(t, int64(10), firstOperation.GetLastResultInt())
 	assert.Nil(t, firstOperation.GetLastResultError())
+	assert.True(t, firstOperation.IsRead())
 
 	assert.True(t, fm.IsFileFullyCached(f))
 	assert.False(t, fm.IsFileFullyCached(f2))
