@@ -3,6 +3,7 @@ package tests
 import (
 	"crypto/rand"
 	"io"
+	"log"
 	"os"
 	"sync"
 	"testing"
@@ -14,7 +15,7 @@ import (
 
 func TestAsync(t *testing.T) {
 	fm := gofilemirror.NewFileMirror(FILE_MIRROR_QUEUE_SIZE)
-	defer fm.Close()
+	defer fm.Close(true)
 
 	f, err := os.CreateTemp("/tmp", "testing_file_mirror")
 	if err != nil {
@@ -27,7 +28,13 @@ func TestAsync(t *testing.T) {
 	}
 
 	callbackCalledCount := 0
+	idleCallbackCalledCount := 0
+
 	buffer := make([]byte, 10)
+
+	fm.SetIdleCallback(func(fileMirror *gofilemirror.FileMirror) {
+		idleCallbackCalledCount++
+	})
 
 	fm.SetOperationCallback(func(operation *gofilemirror.Operation) {
 		switch callbackCalledCount {
@@ -249,4 +256,8 @@ func TestAsync(t *testing.T) {
 	firstOperation = (*operations.GetAsyncOperations())[0]
 	assert.Equal(t, int64(10), firstOperation.GetLastResultInt())
 	assert.Nil(t, firstOperation.GetLastResultError())
+
+	assert.NotZero(t, idleCallbackCalledCount)
+
+	log.Println(idleCallbackCalledCount)
 }

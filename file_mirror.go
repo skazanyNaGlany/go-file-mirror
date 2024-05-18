@@ -20,6 +20,7 @@ type FileMirror struct {
 	fixedBuffer           bool
 	fileCachedMemoryBytes map[*os.File][]bool
 	idleCallback          IdleCallback
+	idleSleepDuration     time.Duration
 }
 
 func (fm *FileMirror) GetFileCachedMemoryBytes(file *os.File) []bool {
@@ -227,7 +228,11 @@ func (fm *FileMirror) run() {
 			}
 		}
 
-		time.Sleep(10 * time.Millisecond)
+		if fm.idleSleepDuration > 0 {
+			if len(fm.asyncOperations) == 0 {
+				time.Sleep(10 * time.Millisecond)
+			}
+		}
 	}
 }
 
@@ -321,12 +326,16 @@ func (fm *FileMirror) execute(operation *Operation) {
 	}
 }
 
-func (fm *FileMirror) Close() error {
+func (fm *FileMirror) Close(closeOSHandles bool) error {
 	fm.running = false
 
 	if fm.asyncOperations != nil {
 		close(fm.asyncOperations)
 		fm.asyncOperations = nil
+	}
+
+	if !closeOSHandles {
+		return nil
 	}
 
 	files := fm.GetAllFiles()
@@ -507,13 +516,19 @@ func (fm *FileMirror) WaitForNoAsyncOperations(duration time.Duration) {
 	}
 }
 
-func NewFileMirror(queueSize int) *FileMirror {
+func NewFileMirror(queueSize int, idleSleepDuration ...time.Duration) *FileMirror {
 	fm := FileMirror{}
 	fm.asyncOperations = make(chan *Operation, queueSize)
 	fm.fileMutexes = make(map[*os.File]*sync.Mutex)
 	fm.asyncFiles = make(map[*os.File]bool)
 	fm.fileUserData = make(map[*os.File]any)
 	fm.fileCachedMemoryBytes = make(map[*os.File][]bool)
+
+	if len(idleSleepDuration) == 0 {
+		fm.idleSleepDuration = 10 * time.Millisecond
+	} else {
+		fm.idleSleepDuration = idleSleepDuration[0]
+	}
 
 	go fm.run()
 

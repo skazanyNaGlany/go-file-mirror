@@ -14,7 +14,7 @@ import (
 
 func TestNormal(t *testing.T) {
 	fm := gofilemirror.NewFileMirror(FILE_MIRROR_QUEUE_SIZE)
-	defer fm.Close()
+	defer fm.Close(true)
 
 	f, err := os.CreateTemp("/tmp", "testing_file_mirror")
 	if err != nil {
