@@ -516,6 +516,10 @@ func (fm *FileMirror) WaitForNoAsyncOperations(duration time.Duration) {
 	}
 }
 
+func (fm *FileMirror) HasAsyncOperations() bool {
+	return len(fm.asyncOperations) > 0
+}
+
 func NewFileMirror(queueSize int, idleSleepDuration ...time.Duration) *FileMirror {
 	fm := FileMirror{}
 	fm.asyncOperations = make(chan *Operation, queueSize)
