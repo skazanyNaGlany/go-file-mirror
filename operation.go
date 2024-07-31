@@ -1,12 +1,11 @@
 package gofilemirror
 
 import (
-	"os"
 	"time"
 )
 
 type Operation struct {
-	file              *os.File
+	file              IFile
 	_type             OperationType
 	err               error
 	resultInt         int64
@@ -57,11 +56,11 @@ func (ao *Operation) SetFileUserData(userData any) {
 	ao.fileUserData = userData
 }
 
-func (ao *Operation) GetFile() *os.File {
+func (ao *Operation) GetFile() IFile {
 	return ao.file
 }
 
-func (ao *Operation) SetFile(file *os.File) {
+func (ao *Operation) SetFile(file IFile) {
 	ao.file = file
 }
 

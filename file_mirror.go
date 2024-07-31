@@ -1,33 +1,32 @@
 package gofilemirror
 
 import (
-	"os"
 	"slices"
 	"sync"
 	"time"
 )
 
 type FileMirror struct {
-	readingFiles          []*os.File
-	writingFiles          []*os.File
-	allFiles              []*os.File
-	fileMutexes           map[*os.File]*sync.Mutex
-	asyncFiles            map[*os.File]bool
-	fileUserData          map[*os.File]any
+	readingFiles          []IFile
+	writingFiles          []IFile
+	allFiles              []IFile
+	fileMutexes           map[IFile]*sync.Mutex
+	asyncFiles            map[IFile]bool
+	fileUserData          map[IFile]any
 	running               bool
 	asyncOperations       chan *Operation
 	operationCallback     OperationCallback
 	fixedBuffer           bool
-	fileCachedMemoryBytes map[*os.File][]bool
+	fileCachedMemoryBytes map[IFile][]bool
 	idleCallback          IdleCallback
 	idleSleepDuration     time.Duration
 }
 
-func (fm *FileMirror) GetFileCachedMemoryBytes(file *os.File) []bool {
+func (fm *FileMirror) GetFileCachedMemoryBytes(file IFile) []bool {
 	return fm.fileCachedMemoryBytes[file]
 }
 
-func (fm *FileMirror) SetFileCachedMemoryBytes(file *os.File, cachedMemoryBytes []bool) {
+func (fm *FileMirror) SetFileCachedMemoryBytes(file IFile, cachedMemoryBytes []bool) {
 	if cachedMemoryBytes != nil {
 		fm.fileCachedMemoryBytes[file] = cachedMemoryBytes
 	} else {
@@ -35,7 +34,7 @@ func (fm *FileMirror) SetFileCachedMemoryBytes(file *os.File, cachedMemoryBytes 
 	}
 }
 
-func (fm *FileMirror) IsFileFullyCached(file *os.File) bool {
+func (fm *FileMirror) IsFileFullyCached(file IFile) bool {
 	if fm.fileCachedMemoryBytes[file] == nil {
 		return false
 	}
@@ -51,7 +50,7 @@ func (fm *FileMirror) IsFileFullyCached(file *os.File) bool {
 	return cachedBytes == len(fm.fileCachedMemoryBytes[file])
 }
 
-func (fm *FileMirror) GetFileCachedPercent(file *os.File) int {
+func (fm *FileMirror) GetFileCachedPercent(file IFile) int {
 	if fm.fileCachedMemoryBytes[file] == nil {
 		return 0
 	}
@@ -85,7 +84,7 @@ func (fm *FileMirror) IsFixedBuffer() bool {
 	return fm.fixedBuffer
 }
 
-func (fm *FileMirror) SetFileMutex(file *os.File, mutex *sync.Mutex) {
+func (fm *FileMirror) SetFileMutex(file IFile, mutex *sync.Mutex) {
 	if mutex != nil {
 		fm.fileMutexes[file] = mutex
 	} else {
@@ -93,7 +92,7 @@ func (fm *FileMirror) SetFileMutex(file *os.File, mutex *sync.Mutex) {
 	}
 }
 
-func (fm *FileMirror) SetFileAsync(file *os.File, async bool) {
+func (fm *FileMirror) SetFileAsync(file IFile, async bool) {
 	if async {
 		fm.asyncFiles[file] = true
 	} else {
@@ -101,7 +100,7 @@ func (fm *FileMirror) SetFileAsync(file *os.File, async bool) {
 	}
 }
 
-func (fm *FileMirror) SetFileUserData(file *os.File, userData any) {
+func (fm *FileMirror) SetFileUserData(file IFile, userData any) {
 	if userData != nil {
 		fm.fileUserData[file] = userData
 	} else {
@@ -109,19 +108,19 @@ func (fm *FileMirror) SetFileUserData(file *os.File, userData any) {
 	}
 }
 
-func (fm *FileMirror) GetFileMutex(file *os.File) *sync.Mutex {
+func (fm *FileMirror) GetFileMutex(file IFile) *sync.Mutex {
 	return fm.fileMutexes[file]
 }
 
-func (fm *FileMirror) IsFileAsync(file *os.File) bool {
+func (fm *FileMirror) IsFileAsync(file IFile) bool {
 	return fm.asyncFiles[file]
 }
 
-func (fm *FileMirror) GetFileUserData(file *os.File) any {
+func (fm *FileMirror) GetFileUserData(file IFile) any {
 	return fm.fileUserData[file]
 }
 
-func (fm *FileMirror) AddWritingFile(file *os.File) bool {
+func (fm *FileMirror) AddWritingFile(file IFile) bool {
 	if slices.Contains(fm.writingFiles, file) {
 		return false
 	}
@@ -135,7 +134,7 @@ func (fm *FileMirror) AddWritingFile(file *os.File) bool {
 	return true
 }
 
-func (fm *FileMirror) RemoveWritingFile(file *os.File) bool {
+func (fm *FileMirror) RemoveWritingFile(file IFile) bool {
 	// writingFiles
 	i := slices.Index(fm.writingFiles, file)
 
@@ -155,11 +154,11 @@ func (fm *FileMirror) RemoveWritingFile(file *os.File) bool {
 	return true
 }
 
-func (fm *FileMirror) GetWritingFiles() []*os.File {
+func (fm *FileMirror) GetWritingFiles() []IFile {
 	return fm.writingFiles
 }
 
-func (fm *FileMirror) AddReadingFile(file *os.File) bool {
+func (fm *FileMirror) AddReadingFile(file IFile) bool {
 	if slices.Contains(fm.readingFiles, file) {
 		return false
 	}
@@ -173,7 +172,7 @@ func (fm *FileMirror) AddReadingFile(file *os.File) bool {
 	return true
 }
 
-func (fm *FileMirror) RemoveReadingFile(file *os.File) bool {
+func (fm *FileMirror) RemoveReadingFile(file IFile) bool {
 	// readingFiles
 	i := slices.Index(fm.readingFiles, file)
 
@@ -193,7 +192,7 @@ func (fm *FileMirror) RemoveReadingFile(file *os.File) bool {
 	return true
 }
 
-func (fm *FileMirror) GetReadingFiles() []*os.File {
+func (fm *FileMirror) GetReadingFiles() []IFile {
 	return fm.readingFiles
 }
 
@@ -237,7 +236,7 @@ func (fm *FileMirror) run() {
 }
 
 func (fm *FileMirror) fillCachedMemoryBytes(
-	file *os.File,
+	file IFile,
 	startOffset int64,
 	endOffset int64,
 	b bool,
@@ -355,12 +354,12 @@ func (fm *FileMirror) Close(closeOSHandles bool) error {
 }
 
 func (fm *FileMirror) RemoveAllFiles() error {
-	fm.readingFiles = make([]*os.File, 0)
-	fm.writingFiles = make([]*os.File, 0)
-	fm.asyncFiles = make(map[*os.File]bool)
-	fm.fileMutexes = make(map[*os.File]*sync.Mutex)
-	fm.fileCachedMemoryBytes = make(map[*os.File][]bool)
-	fm.allFiles = make([]*os.File, 0)
+	fm.readingFiles = make([]IFile, 0)
+	fm.writingFiles = make([]IFile, 0)
+	fm.asyncFiles = make(map[IFile]bool)
+	fm.fileMutexes = make(map[IFile]*sync.Mutex)
+	fm.fileCachedMemoryBytes = make(map[IFile][]bool)
+	fm.allFiles = make([]IFile, 0)
 
 	return nil
 }
@@ -369,7 +368,7 @@ func (fm *FileMirror) ReadAt(
 	b []byte,
 	off int64,
 	operationUserData any,
-	useFiles ...*os.File,
+	useFiles ...IFile,
 ) (operationList *OperationList) {
 	operationList = &OperationList{}
 
@@ -412,7 +411,7 @@ func (fm *FileMirror) WriteAt(
 	b []byte,
 	off int64,
 	operationUserData any,
-	useFiles ...*os.File,
+	useFiles ...IFile,
 ) (operationList *OperationList) {
 	operationList = &OperationList{}
 
@@ -451,8 +450,8 @@ func (fm *FileMirror) WriteAt(
 	return operationList
 }
 
-func (fm *FileMirror) GetAsyncFiles() []*os.File {
-	files := make([]*os.File, 0)
+func (fm *FileMirror) GetAsyncFiles() []IFile {
+	files := make([]IFile, 0)
 
 	for _, file := range fm.allFiles {
 		if fm.asyncFiles[file] {
@@ -463,7 +462,7 @@ func (fm *FileMirror) GetAsyncFiles() []*os.File {
 	return files
 }
 
-func (fm *FileMirror) GetFirstAsyncFile() *os.File {
+func (fm *FileMirror) GetFirstAsyncFile() IFile {
 	for file, _ := range fm.asyncFiles {
 		return file
 	}
@@ -471,8 +470,8 @@ func (fm *FileMirror) GetFirstAsyncFile() *os.File {
 	return nil
 }
 
-func (fm *FileMirror) GetNonAsyncFiles() []*os.File {
-	files := make([]*os.File, 0)
+func (fm *FileMirror) GetNonAsyncFiles() []IFile {
+	files := make([]IFile, 0)
 
 	for _, file := range fm.allFiles {
 		if !fm.asyncFiles[file] {
@@ -483,7 +482,7 @@ func (fm *FileMirror) GetNonAsyncFiles() []*os.File {
 	return files
 }
 
-func (fm *FileMirror) GetFirstNonAsyncFile() *os.File {
+func (fm *FileMirror) GetFirstNonAsyncFile() IFile {
 	for _, file := range fm.allFiles {
 		if !fm.asyncFiles[file] {
 			return file
@@ -493,7 +492,7 @@ func (fm *FileMirror) GetFirstNonAsyncFile() *os.File {
 	return nil
 }
 
-func (fm *FileMirror) GetAllFiles() []*os.File {
+func (fm *FileMirror) GetAllFiles() []IFile {
 	return fm.allFiles
 }
 
@@ -527,10 +526,10 @@ func (fm *FileMirror) GetCountAsyncOperations() int {
 func NewFileMirror(queueSize int, idleSleepDuration ...time.Duration) *FileMirror {
 	fm := FileMirror{}
 	fm.asyncOperations = make(chan *Operation, queueSize)
-	fm.fileMutexes = make(map[*os.File]*sync.Mutex)
-	fm.asyncFiles = make(map[*os.File]bool)
-	fm.fileUserData = make(map[*os.File]any)
-	fm.fileCachedMemoryBytes = make(map[*os.File][]bool)
+	fm.fileMutexes = make(map[IFile]*sync.Mutex)
+	fm.asyncFiles = make(map[IFile]bool)
+	fm.fileUserData = make(map[IFile]any)
+	fm.fileCachedMemoryBytes = make(map[IFile][]bool)
 
 	if len(idleSleepDuration) == 0 {
 		fm.idleSleepDuration = 10 * time.Millisecond
