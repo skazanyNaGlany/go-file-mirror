@@ -32,45 +32,45 @@ import (
 )
 
 func main() {
-    // create FileMirror instance
+    // Create FileMirror instance
     fm := gofilemirror.NewFileMirror(FILE_MIRROR_QUEUE_SIZE)
     defer fm.Close(true)
 
-	fm.SetOperationCallback(func(operation *gofilemirror.Operation) {
-        // the callback will be fired on any I/O operation
+    fm.SetOperationCallback(func(operation *gofilemirror.Operation) {
+        // The callback will be fired on any I/O operation
         // for each of the file handle
-	})
+    })
 
-	fm.SetIdleCallback(func(fileMirror *gofilemirror.FileMirror) {
-        // the callback will be fired on idle FileMirror instance
-	})
+    fm.SetIdleCallback(func(fileMirror *gofilemirror.FileMirror) {
+        // The callback will be fired on idle FileMirror instance
+    })
 
-    // first temporary file
+    // First temporary file
     f, err := os.CreateTemp("/tmp", "testing_file_mirror")
     if err != nil {
         panic(err)
     }
 
-    // second temporary file
+    // Second temporary file
     f2, err := os.CreateTemp("/tmp", "testing_file_mirror2")
     if err != nil {
         panic(err)
     }
 
-    // 10 bytes buffer for io operations
+    // 10 bytes buffer for I/O operations
     buffer := make([]byte, 10)
 
-    // fill the buffer with some random data
+    // Fill the buffer with some random data
     rand.Read(buffer)
 
-    // reading only from "f"
-    // writing to "f" and "f2"
-    // all operations on both files will be async
+    // Reading only from "f"
+    // Writing to "f" and "f2"
+    // All operations on both files will be async
     fm.SetFileAsync(f, true)
     fm.SetFileAsync(f2, true)
 
-    // write 10 bytes at 0 offset to both files
-    // the operation will be async, will not block
+    // Write 10 bytes at 0 offset to both files
+    // The operation will be async, will not block
     // and return immediately
     operations := fm.WriteAt(buffer, 0)
     operations.WaitForDone(10 * time.Second)
@@ -79,15 +79,15 @@ func main() {
         log.Fatal("still have some pending operations")
     }
 
-    // fatal when one of the operation failed
+    // Fatal when one of the operations failed
     for _, operation := range *operations {
         if err := operation.GetLastResultError(); err != nil {
             log.Fatal(err)
         }
     }
 
-    // read written data
-    // the operation will be async, will not block
+    // Read written data
+    // The operation will be async, will not block
     // and return immediately
     operations = fm.ReadAt(buffer, 0)
     operations.WaitForDone(10 * time.Second)
@@ -96,7 +96,7 @@ func main() {
         log.Fatal("still have some pending operations")
     }
 
-    // fatal when one of the operation failed
+    // Fatal when one of the operations failed
     for _, operation := range *operations {
         if err := operation.GetLastResultError(); err != nil {
             log.Fatal(err)
